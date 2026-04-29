@@ -17,6 +17,9 @@ export const db = getFirestore(app)
 export const auth = getAuth(app)
 export const functions = getFunctions(app)
 
+// import.meta.env.DEV is a Vite build-time constant — tree-shaken to `false`
+// in production builds (`npm run build`). Emulator connections are unreachable
+// in any Vercel deployment. No runtime check or env var required.
 if (import.meta.env.DEV) {
   connectFirestoreEmulator(db, '127.0.0.1', 8080)
   connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true })

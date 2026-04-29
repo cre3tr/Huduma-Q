@@ -1,6 +1,24 @@
 import { useEffect, useState } from 'react'
 import { fetchSlots, isAvailable } from '../lib/slots'
 
+/**
+ * SlotGrid — renders available/unavailable slots for a given date + service.
+ *
+ * KNOWN LIMITATION — no live refresh:
+ * Slots are fetched once on mount (and re-fetched when `date` or `service`
+ * changes). The grid does NOT subscribe to Firestore onSnapshot, so a slot
+ * booked by another citizen after this component mounts will appear available
+ * until the user navigates away and back, or manually reloads the page.
+ *
+ * The race condition is safe at the write layer: `hold_slot` is a Firestore
+ * transaction that enforces first-writer-wins. The only UX impact is a
+ * citizen may attempt to select a stale green slot and receive an UNAVAILABLE
+ * error from the Cloud Function, at which point they are shown an error and
+ * can pick another slot.
+ *
+ * Fixing this requires replacing `getDocs` in `slots.js` with `onSnapshot`
+ * and lifting the subscription into this component. Deferred post-hackathon.
+ */
 export default function SlotGrid({ date, service, existingAppointments, onSlotSelect }) {
   const [slots, setSlots] = useState([])
   const [loading, setLoading] = useState(true)
@@ -50,11 +68,10 @@ export default function SlotGrid({ date, service, existingAppointments, onSlotSe
             key={slot.id}
             disabled={!selectable}
             onClick={() => onSlotSelect(slot)}
-            className={`py-2 px-1 text-xs font-medium rounded-xl border transition-all ${
-              selectable
+            className={`py-2 px-1 text-xs font-medium rounded-xl border transition-all ${selectable
                 ? 'bg-white border-gray-200 text-gray-700 hover:border-gray-900 hover:text-gray-900 hover:shadow-sm'
                 : 'bg-gray-50 border-gray-100 text-gray-300 cursor-not-allowed'
-            }`}
+              }`}
           >
             {slot.time}
           </button>

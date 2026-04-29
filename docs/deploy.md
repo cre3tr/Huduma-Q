@@ -119,3 +119,6 @@ Re-run each morning of the demo — slots cover today + tomorrow only.
 | Emails not sending | Check Brevo → Transactional → Logs for errors; confirm sender email is verified |
 | Slots don't appear | Firestore index not built yet — check Indexes tab, wait for green status |
 | Functions won't deploy | Upgrade to Blaze plan in Firebase Console → Usage and billing |
+| "Secret environment variable overlaps non-secret environment variable" on deploy | `functions/.env` has a plain env var with the same name as a Secret Manager secret. Remove the duplicate from `.env` and redeploy. |
+| Function returns 500 but no Python traceback in `firebase functions:log` | 2nd gen (Cloud Run) functions write execution logs to Google Cloud Logging, not the Firebase CLI. Go to `console.cloud.google.com/logs` and filter by function name to see Python stderr. |
+| BREVO_API_KEY 401 Unauthorized | The secret value in Firebase Secret Manager is wrong. Go to GCP Console → Secret Manager → `BREVO_API_KEY` → add a new version with the correct key from Brevo dashboard → redeploy functions. |

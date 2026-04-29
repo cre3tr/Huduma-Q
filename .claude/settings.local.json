@@ -3,7 +3,10 @@
     "allow": [
       "WebSearch",
       "WebFetch(domain:firebase.google.com)",
-      "Bash(git -C \"F:/CRE3TR/CODING-Projects/DevPost Challenge/Huduma-Q\" log --oneline)"
+      "Bash(git -C \"F:/CRE3TR/CODING-Projects/DevPost Challenge/Huduma-Q\" log --oneline)",
+      "Bash(mkdir -p \"C:/Users/ketti/.claude/skills/dependency-review\")",
+      "Bash(mkdir -p \"C:/Users/ketti/.claude/skills/code-cleanup\")",
+      "Bash(mkdir -p \"C:/Users/ketti/.claude/skills/cartman-design\")"
     ]
   }
 }

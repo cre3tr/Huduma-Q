@@ -10,8 +10,8 @@
   - [Firebase Auth Google Sign-In docs](https://firebase.google.com/docs/auth/web/google-signin)
 - **Server-side logic:** Firebase Cloud Functions — Python 3.12, 2nd gen
   - [Cloud Functions Python docs](https://firebase.google.com/docs/functions/get-started?gen=2nd)
-- **Email:** Resend — 3,000/month free tier
-  - [Resend docs](https://resend.com/docs) | [Python SDK](https://resend.com/docs/send-with-python)
+- **Email:** Brevo (sib_api_v3_sdk) — free tier, 300/day
+  - [Brevo docs](https://developers.brevo.com) | [Python SDK](https://pypi.org/project/sib-api-v3-sdk/)
 - **PDF:** jsPDF — client-side, no server round-trip
   - [jsPDF docs](https://github.com/parallax/jsPDF)
 - **Calendar:** ICS file — generated client-side as plain text Blob, no library needed
@@ -38,9 +38,10 @@ VITE_FIREBASE_MESSAGING_SENDER_ID
 VITE_FIREBASE_APP_ID
 ```
 
-Cloud Functions (Firebase environment config):
+Cloud Functions (Firebase Secret Manager):
 ```
-RESEND_API_KEY
+BREVO_API_KEY
+BREVO_SENDER_EMAIL
 RATE_FORM_URL     # Google Form URL for rate experience
 APP_URL           # Production Vercel URL (for magic links)
 ```
@@ -72,7 +73,7 @@ Citizen / Staff Browser
                                                   └──────────────┬────────────────────┘
                                                                  │
                                                                  ▼
-                                                             Resend
+                                                             Brevo
                                                    (transactional email)
 ```
 
@@ -86,7 +87,7 @@ Citizen / Staff Browser
         ├── validates 8-digit ID + email format
         ├── creates sessions/{docId} { email, idNumber, firstName,
         │   lastName, phone, expiresAt: +15min, used: false }
-        └── Resend sends magic link → {APP_URL}/verify?token={docId}
+        └── Brevo sends magic link → {APP_URL}/verify?token={docId}
         │
 2. Citizen clicks link → Verify.jsx
         ├── reads sessions/{token} from Firestore
@@ -102,7 +103,7 @@ Citizen / Staff Browser
         ├── Firestore transaction: slot → "booked"
         ├── creates appointments/{id} with full citizen + slot details
         ├── marks sessions/{docId} used: true
-        └── Resend sends confirmation email
+        └── Brevo sends confirmation email
         │
 5. Success.jsx
         ├── renders appointment details from BookingContext
@@ -123,13 +124,13 @@ Citizen / Staff Browser
         ├── validates Firebase Auth token + staff/{uid} doc
         ├── generates appointment code: {PREFIX}-{4_ALPHANUMERIC}
         ├── updates appointment: status: "resolved", appointmentCode, resolvedAt
-        ├── Resend: appointment code email to citizen
-        └── Resend: rate experience email (Google Form link) to citizen
+        ├── Brevo: appointment code email to citizen
+        └── Brevo: rate experience email (Google Form link) to citizen
 
 4. sweep_missed Cloud Function (every 5 min, scheduled)
         ├── queries appointments where status=="pending" and time + 8min < now
         ├── updates each: status: "missed", missedAt
-        └── Resend: missed slot email (walk-in instructions + reschedule link)
+        └── Brevo: missed slot email (walk-in instructions + reschedule link)
 ```
 
 ---
@@ -241,6 +242,7 @@ Implements `prd.md > Booking Confirmation`.
 - "Download PDF" button: calls `pdf.js` → triggers browser download
 - "Add to Calendar" button: calls `ics.js` → triggers `.ics` download
 - Confirmation email already sent by `confirm_booking` Cloud Function
+- 25-second countdown auto-logout: clears `BookingContext` via `resetBooking()` and navigates to `/` — prevents session lingering on shared/kiosk devices
 
 #### ExpiredLink.jsx
 - Message: "This link has expired. Please return to the home page to start again."
@@ -277,10 +279,11 @@ Implements `prd.md > Service Selection and Slot Booking` (slot display).
 Props: `date`, `service`, `slotDuration`, `existingAppointments` (citizen's other bookings for 2-hour gap check), `onSlotSelect`
 
 - Fetches `slots` collection filtered by `date` and `service`
-- Client-side expiry: if `status === "held"` and `heldUntil < now`, render as available (green)
-- 2-hour gap rule: if `existingAppointments` contains a booking within 2 hours of this slot's time, render as black
+- Client-side expiry: if `status === "held"` and `heldUntil < now`, render as available
+- Past-time filter: if slot time ≤ current time (client local clock), render as unavailable — prevents booking past slots in the UI; `hold_slot` Cloud Function enforces the same rule server-side
+- 2-hour gap rule: if `existingAppointments` contains a booking within 2 hours of this slot's time, render as unavailable
 - Renders slots from 09:00 to 16:00 in `slotDuration`-minute increments
-- Green = available, Black = unavailable (taken, held, or within 2-hour gap)
+- Selectable (clickable) = available AND not past AND not within 2-hour gap
 - On green slot click: emit selected slot to parent
 
 #### ServiceCard.jsx
@@ -334,7 +337,7 @@ Firebase app init using `VITE_FIREBASE_*` env vars. Exports: `db` (Firestore ins
 
 ## Cloud Functions (Python 3.12)
 
-All functions registered in `functions/main.py`. Helpers in `functions/email.py` (Resend templates) and `functions/codes.py` (appointment code generator).
+All functions registered in `functions/main.py`. Helpers in `functions/emails.py` (Brevo templates) and `functions/codes.py` (appointment code generator).
 
 ### send_verification_email (HTTP callable)
 Implements `prd.md > Citizen Identity Verification`.
@@ -347,7 +350,7 @@ Implements `prd.md > Citizen Identity Verification`.
 **Logic:**
 1. Validate: `idNumber` matches `^\d{8}$`, `email` is valid format
 2. Create `sessions/{auto-id}`: `{ firstName, lastName, email, idNumber, phone, expiresAt: now+15min, used: false }`
-3. Send Resend email to `email`: subject "Verify your HudumaQ booking", body contains `{APP_URL}/verify?token={docId}`
+3. Send Brevo email to `email`: subject "Verify your HudumaQ booking", body contains `{APP_URL}/verify?token={docId}`
 
 **Returns:** `{ "success": true }`
 
@@ -365,6 +368,7 @@ Implements `prd.md > Service Selection and Slot Booking` (hold mechanic).
 1. Verify `sessions/{sessionToken}` exists, `expiresAt > now`, `used === false`
 2. Firestore transaction on `slots/{slotId}`:
    - Read current state
+   - Parse slot datetime in `Africa/Nairobi` (EAT, UTC+3) — if `slot_dt ≤ now`: raise `FAILED_PRECONDITION` ("Slot time has already passed.")
    - If `status === "booked"`: raise `UNAVAILABLE`
    - If `status === "held"` AND `heldUntil > now`: raise `UNAVAILABLE`
    - Otherwise (available OR expired hold): write `status: "held"`, `heldBy: sessionToken`, `heldUntil: now+5min`
@@ -388,7 +392,7 @@ Implements `prd.md > Booking Confirmation`.
    - Write slot: `status: "booked"`, `bookedBy: <new appointmentId>`
    - Create `appointments/{auto-id}` with all citizen fields + slot fields, `status: "pending"`, `createdAt: now`
    - Update `sessions/{sessionToken}`: `used: true`
-3. Send Resend confirmation email: service, date, time, centreLocation, calendar ICS attachment (or link)
+3. Send Brevo confirmation email: service, date, time, centreLocation
 
 **Returns:** `{ "success": true, "appointmentId": "<id>" }`
 
@@ -410,8 +414,8 @@ Requires Firebase Auth ID token in request header.
 4. Generate code via `codes.py`: `{SERVICE_PREFIX}-{4_RANDOM_ALPHANUMERIC}` (e.g., `NID-A3K9`)
    - Prefixes: `NID` → new_id, `RID` → replace_id, `COL` → collect_id
 5. Update appointment: `status: "resolved"`, `appointmentCode: <code>`, `resolvedAt: now`
-6. Resend email to citizen: appointment code
-7. Resend email to citizen: rate experience (Google Form URL from `RATE_FORM_URL` env)
+6. Brevo email to citizen: appointment code
+7. Brevo email to citizen: rate experience (Google Form URL from `RATE_FORM_URL` env)
 
 **Returns:** `{ "success": true, "appointmentCode": "<code>" }`
 
@@ -425,7 +429,7 @@ Implements `prd.md > Missed Appointment Handling`.
 2. Query `appointments` where `date == today` AND `status == "pending"`
 3. For each result: check if `time + 8 minutes < now`
 4. If yes: update `status: "missed"`, `missedAt: now`
-5. Send Resend missed slot email to citizen:
+5. Send Brevo missed slot email to citizen:
    - Courteous acknowledgment
    - Walk-in option: informational text directing to the walk-in counter (no system action)
    - Reschedule option: link to `{APP_URL}` to start fresh
@@ -548,9 +552,9 @@ hudumaq/
 │
 ├── functions/                         # Firebase Cloud Functions — Python 3.12
 │   ├── main.py                        # All function definitions + registration
-│   ├── email.py                       # Resend send helpers + email templates
+│   ├── emails.py                      # Brevo send helpers + email templates
 │   ├── codes.py                       # Appointment code generator
-│   └── requirements.txt               # firebase-functions, resend, etc.
+│   └── requirements.txt               # firebase-functions, sib-api-v3-sdk, etc.
 │
 ├── seed/
 │   └── seed.py                        # Seeds today+tomorrow slots + staff docs
@@ -596,7 +600,7 @@ Rate experience feedback is collected via an external Google Form linked in the 
 | Service | Purpose | Tier | Docs |
 |---|---|---|---|
 | Firebase (Blaze) | Firestore + Auth + Cloud Functions + Cloud Scheduler | Pay-as-you-go (free at hackathon scale) | [firebase.google.com/docs](https://firebase.google.com/docs) |
-| Resend | Transactional email | Free — 3,000/month, 100/day | [resend.com/docs](https://resend.com/docs) |
+| Brevo | Transactional email | Free — 300/day | [developers.brevo.com](https://developers.brevo.com) |
 | Vercel | Frontend hosting | Free hobby tier | [vercel.com/docs](https://vercel.com/docs) |
 | Cloudflare | DNS + CDN | Free | [developers.cloudflare.com](https://developers.cloudflare.com) |
 | jsPDF | Client-side PDF generation | MIT | [github.com/parallax/jsPDF](https://github.com/parallax/jsPDF) |

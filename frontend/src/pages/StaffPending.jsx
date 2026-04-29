@@ -12,12 +12,10 @@ export default function StaffPending() {
   const [loadingIds, setLoadingIds] = useState(new Set())
   const [rowErrors, setRowErrors] = useState({})
   const [streamError, setStreamError] = useState(false)
-  const [user, setUser] = useState(null)
 
   useEffect(() => {
     const unsubscribeAuth = auth.onAuthStateChanged(u => {
       if (!u) navigate('/staff')
-      else setUser(u)
     })
 
     const today = new Date().toISOString().split('T')[0]
