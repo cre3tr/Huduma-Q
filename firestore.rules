@@ -1,0 +1,29 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Sessions: anyone can read by exact doc ID (magic link), Cloud Functions write
+    match /sessions/{docId} {
+      allow read: if true;
+      allow write: if false;  // Cloud Functions only via Admin SDK
+    }
+
+    // Slots: anyone can read (for SlotGrid), Cloud Functions write
+    match /slots/{slotId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Appointments: authenticated staff can read, Cloud Functions write
+    match /appointments/{appointmentId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    // Staff: authenticated users can read their own doc
+    match /staff/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false;
+    }
+  }
+}

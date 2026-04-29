@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:firebase.google.com)",
+      "Bash(git -C \"F:/CRE3TR/CODING-Projects/DevPost Challenge/Huduma-Q\" log --oneline)"
+    ]
+  }
+}
