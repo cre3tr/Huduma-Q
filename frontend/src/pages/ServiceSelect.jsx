@@ -87,7 +87,11 @@ export default function ServiceSelect() {
       navigate('/review')
     } catch (err) {
       console.error(err)
-      setError('Slot hold unavailable — please try again shortly.')
+      if (err?.message === 'Slot time has already passed.') {
+        setError('Slot hold unavailable — you cannot book a past time slot.')
+      } else {
+        setError('Slot hold unavailable — please try again shortly.')
+      }
     } finally {
       setHolding(false)
     }

@@ -1,5 +1,6 @@
 import logging
 import os
+import traceback
 from datetime import datetime, timedelta, timezone
 
 import firebase_admin
@@ -16,7 +17,19 @@ from emails import (
 )
 
 firebase_admin.initialize_app()
-db = firestore.client()
+
+options.set_global_options(
+    secrets=["BREVO_API_KEY", "BREVO_SENDER_EMAIL", "APP_URL", "RATE_FORM_URL"]
+)
+
+class _LazyDB:
+    _client = None
+    def __getattr__(self, name):
+        if type(self)._client is None:
+            type(self)._client = firestore.client()
+        return getattr(type(self)._client, name)
+
+db = _LazyDB()
 
 SERVICE_LABELS = {
     "new_id": "New ID Application",
@@ -25,9 +38,18 @@ SERVICE_LABELS = {
 }
 
 @https_fn.on_call(region="us-central1")
-def send_verification_email_fn(req: https_fn.CallableRequest):
+def send_verification_email(req: https_fn.CallableRequest):
     logging.info(f"Boundary Inbound Payload: {req.data}")
+    try:
+        return _send_verification_email_impl(req)
+    except https_fn.HttpsError:
+        raise
+    except Exception:
+        logging.error(f"send_verification_email unhandled exception:\n{traceback.format_exc()}")
+        raise https_fn.HttpsError("internal", "Internal error — check Cloud Logging for traceback.")
 
+def _send_verification_email_impl(req: https_fn.CallableRequest):
+    import re
     data = req.data
     first_name = data.get("firstName", "").strip()
     last_name = data.get("lastName", "").strip()
@@ -35,8 +57,6 @@ def send_verification_email_fn(req: https_fn.CallableRequest):
     id_number = data.get("idNumber", "").strip()
     phone = data.get("phone", "").strip()
 
-    # Validate
-    import re
     if not re.match(r"^\d{8}$", id_number):
         raise https_fn.HttpsError("invalid-argument", "ID number must be exactly 8 digits.")
     if not re.match(r"^[^@]+@[^@]+\.[^@]+$", email):
@@ -45,7 +65,6 @@ def send_verification_email_fn(req: https_fn.CallableRequest):
     now = datetime.now(timezone.utc)
     expires_at = now + timedelta(minutes=15)
 
-    # Create session doc
     session_ref = db.collection("sessions").document()
     session_ref.set({
         "firstName": first_name,
@@ -65,7 +84,7 @@ def send_verification_email_fn(req: https_fn.CallableRequest):
     return {"success": True}
 
 @https_fn.on_call(region="us-central1")
-def hold_slot_fn(req: https_fn.CallableRequest):
+def hold_slot(req: https_fn.CallableRequest):
     logging.info(f"Boundary Inbound Payload: {req.data}")
 
     slot_id = req.data.get("slotId")
@@ -100,6 +119,11 @@ def hold_slot_fn(req: https_fn.CallableRequest):
 
         slot = slot_snap.to_dict()
 
+        nairobi_tz = timezone(timedelta(hours=3))
+        slot_dt = datetime.fromisoformat(f"{slot['date']}T{slot['time']}:00").replace(tzinfo=nairobi_tz)
+        if slot_dt <= datetime.now(nairobi_tz):
+            raise https_fn.HttpsError("failed-precondition", "Slot time has already passed.")
+
         if slot["status"] == "booked":
             raise https_fn.HttpsError("unavailable", "Slot already booked.")
 
@@ -120,7 +144,7 @@ def hold_slot_fn(req: https_fn.CallableRequest):
     return {"success": True, "heldUntil": held_until.isoformat()}
 
 @https_fn.on_call(region="us-central1")
-def confirm_booking_fn(req: https_fn.CallableRequest):
+def confirm_booking(req: https_fn.CallableRequest):
     logging.info(f"Boundary Inbound Payload: {req.data}")
 
     slot_id = req.data.get("slotId")
@@ -202,7 +226,7 @@ def confirm_booking_fn(req: https_fn.CallableRequest):
     return {"success": True, "appointmentId": appointment_id}
 
 @https_fn.on_call(region="us-central1")
-def verify_arrival_fn(req: https_fn.CallableRequest):
+def verify_arrival(req: https_fn.CallableRequest):
     logging.info(f"Boundary Inbound Payload: {req.data}")
 
     # Require Firebase Auth
@@ -253,7 +277,7 @@ def verify_arrival_fn(req: https_fn.CallableRequest):
     region="us-central1",
     timezone="Africa/Nairobi"
 )
-def sweep_missed_fn(event: scheduler_fn.ScheduledEvent):
+def sweep_missed(event: scheduler_fn.ScheduledEvent):
     logging.info("Boundary Inbound Payload: sweep_missed running")
 
     nairobi_tz = timezone(timedelta(hours=3))  # EAT = UTC+3
@@ -289,9 +313,3 @@ def sweep_missed_fn(event: scheduler_fn.ScheduledEvent):
 
     logging.info(f"sweep_missed complete. Marked {missed_count} appointments missed.")
 
-# These names MUST match what the frontend calls via httpsCallable()
-send_verification_email = send_verification_email_fn
-hold_slot = hold_slot_fn
-confirm_booking = confirm_booking_fn
-verify_arrival = verify_arrival_fn
-sweep_missed = sweep_missed_fn

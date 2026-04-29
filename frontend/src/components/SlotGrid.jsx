@@ -22,6 +22,8 @@ export default function SlotGrid({ date, service, slotDuration, existingAppointm
     loadSlots()
   }, [date, service])
 
+  const isPast = (slotTime) => new Date(`${date}T${slotTime}`) <= new Date()
+
   const isWithinTwoHours = (slotTime) => {
     const slotDateObj = new Date(`${date}T${slotTime}`)
     
@@ -42,7 +44,8 @@ export default function SlotGrid({ date, service, slotDuration, existingAppointm
       {slots.map(slot => {
         const available = isAvailable(slot)
         const conflict = isWithinTwoHours(slot.time)
-        const selectable = available && !conflict
+        const past = isPast(slot.time)
+        const selectable = available && !conflict && !past
 
         return (
           <button

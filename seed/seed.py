@@ -56,7 +56,7 @@ if __name__ == "__main__":
 
     # Replace with actual Firebase Auth UID after first login:
     seed_staff(
-        uid="REPLACE_WITH_STAFF_UID",
-        email="staff@huduma.go.ke",
+        uid="VMsG0VnYaxPTbzODzIfiXtYKvCF3",
+        email="georgiegitau@gmail.com",
         name="Demo Staff"
     )

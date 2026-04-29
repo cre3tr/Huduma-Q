@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useBooking } from '../context/BookingContext'
 import { generatePDF } from '../lib/pdf'
@@ -10,15 +10,34 @@ const serviceLabels = {
   collect_id: "Collect ID"
 }
 
+const LOGOUT_SECS = 25
+
 export default function Success() {
   const navigate = useNavigate()
-  const { confirmedAppointment } = useBooking()
+  const { confirmedAppointment, resetBooking } = useBooking()
+  const [secondsLeft, setSecondsLeft] = useState(LOGOUT_SECS)
 
   useEffect(() => {
     if (!confirmedAppointment) {
       navigate('/')
+      return
     }
   }, [confirmedAppointment, navigate])
+
+  // Auto-logout countdown — runs once on mount
+  useEffect(() => {
+    let s = LOGOUT_SECS
+    const id = setInterval(() => {
+      s--
+      setSecondsLeft(s)
+      if (s <= 0) {
+        clearInterval(id)
+        resetBooking()
+        navigate('/')
+      }
+    }, 1000)
+    return () => clearInterval(id)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!confirmedAppointment) return null
 
@@ -51,19 +70,23 @@ export default function Success() {
         </div>
 
         <div className="space-y-3">
-          <button 
+          <button
             onClick={() => generatePDF(confirmedAppointment)}
             className="w-full bg-black text-white p-2 rounded font-medium hover:bg-gray-800 transition-colors"
           >
             Download Appointment Slip (PDF)
           </button>
-          <button 
+          <button
             onClick={() => generateICS(confirmedAppointment)}
             className="w-full bg-white border border-gray-300 text-black p-2 rounded font-medium hover:bg-gray-50 transition-colors"
           >
             Add to Calendar
           </button>
         </div>
+
+        <p className="text-center text-xs text-gray-400 mt-6">
+          This page closes in {secondsLeft}s
+        </p>
       </div>
     </div>
   )

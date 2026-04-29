@@ -2,11 +2,18 @@ import os
 import sib_api_v3_sdk
 from sib_api_v3_sdk.rest import ApiException
 
-configuration = sib_api_v3_sdk.Configuration()
-configuration.api_key['api-key'] = os.environ.get("BREVO_API_KEY")
-_api = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
+_api = None
 
-SENDER = {"name": "HudumaQ", "email": os.environ.get("BREVO_SENDER_EMAIL", "noreply@hudumaq.com")}
+def _get_api():
+    global _api
+    if _api is None:
+        cfg = sib_api_v3_sdk.Configuration()
+        cfg.api_key['api-key'] = os.environ["BREVO_API_KEY"]
+        _api = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(cfg))
+    return _api
+
+def _get_sender():
+    return {"name": "HudumaQ", "email": os.environ["BREVO_SENDER_EMAIL"]}
 
 SERVICE_LABELS = {
     "new_id": "New ID Application",
@@ -16,8 +23,8 @@ SERVICE_LABELS = {
 
 def _send(to_email: str, subject: str, text: str):
     try:
-        _api.send_transac_email(sib_api_v3_sdk.SendSmtpEmail(
-            sender=SENDER,
+        _get_api().send_transac_email(sib_api_v3_sdk.SendSmtpEmail(
+            sender=_get_sender(),
             to=[{"email": to_email}],
             subject=subject,
             text_content=text,

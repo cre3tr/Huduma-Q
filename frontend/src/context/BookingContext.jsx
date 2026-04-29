@@ -9,6 +9,14 @@ export function BookingProvider({ children }) {
   const [heldSlot, setHeldSlot] = useState(null)
   const [confirmedAppointment, setConfirmedAppointment] = useState(null)
 
+  const resetBooking = () => {
+    setCitizen(null)
+    setSessionToken(null)
+    setSelectedService(null)
+    setHeldSlot(null)
+    setConfirmedAppointment(null)
+  }
+
   const value = {
     citizen,
     setCitizen,
@@ -19,7 +27,8 @@ export function BookingProvider({ children }) {
     heldSlot,
     setHeldSlot,
     confirmedAppointment,
-    setConfirmedAppointment
+    setConfirmedAppointment,
+    resetBooking,
   }
 
   return (
