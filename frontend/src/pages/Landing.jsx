@@ -53,11 +53,11 @@ export default function Landing() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className={labelCls}>First Name</label>
-                <input type="text" name="firstName" required value={formData.firstName} onChange={handleChange} className={inputCls} placeholder="John" />
+                <input type="text" name="firstName" required value={formData.firstName} onChange={handleChange} className={inputCls} />
               </div>
               <div>
                 <label className={labelCls}>Last Name</label>
-                <input type="text" name="lastName" required value={formData.lastName} onChange={handleChange} className={inputCls} placeholder="Doe" />
+                <input type="text" name="lastName" required value={formData.lastName} onChange={handleChange} className={inputCls} />
               </div>
             </div>
             <div>
