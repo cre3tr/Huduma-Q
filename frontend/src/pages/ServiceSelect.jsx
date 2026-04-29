@@ -8,34 +8,18 @@ import ServiceCard from '../components/ServiceCard'
 import SlotGrid from '../components/SlotGrid'
 
 const SERVICES = [
-  {
-    id: 'new_id',
-    title: 'New ID Application',
-    duration: 20,
-    requirements: ['Original birth certificate', '2 passport photos', 'KES 300 fee']
-  },
-  {
-    id: 'replace_id',
-    title: 'Replace Lost ID',
-    duration: 10,
-    requirements: ['Affidavit of loss', '2 passport photos', 'KES 300 fee']
-  },
-  {
-    id: 'collect_id',
-    title: 'Collect ID',
-    duration: 5,
-    requirements: ['Original collection slip']
-  }
+  { id: 'new_id', title: 'New ID Application', duration: 20, requirements: ['Original birth certificate', '2 passport photos', 'KES 300 fee'] },
+  { id: 'replace_id', title: 'Replace Lost ID', duration: 10, requirements: ['Affidavit of loss', '2 passport photos', 'KES 300 fee'] },
+  { id: 'collect_id', title: 'Collect ID', duration: 5, requirements: ['Original collection slip'] },
 ]
 
 export default function ServiceSelect() {
   const navigate = useNavigate()
   const { citizen, sessionToken, selectedService, setSelectedService, setHeldSlot } = useBooking()
-  
+
   const todayStr = new Date().toISOString().split('T')[0]
-  const tmrwDate = new Date()
-  tmrwDate.setDate(tmrwDate.getDate() + 1)
-  const tomorrowStr = tmrwDate.toISOString().split('T')[0]
+  const tmrw = new Date(); tmrw.setDate(tmrw.getDate() + 1)
+  const tomorrowStr = tmrw.toISOString().split('T')[0]
 
   const [date, setDate] = useState(todayStr)
   const [existingAppointments, setExistingAppointments] = useState([])
@@ -43,47 +27,17 @@ export default function ServiceSelect() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    if (!citizen) {
-      navigate('/')
-      return
-    }
-    
-    async function fetchExisting() {
-      const apps = await getCitizenAppointments(citizen.email)
-      setExistingAppointments(apps)
-    }
-    fetchExisting()
+    if (!citizen) { navigate('/'); return }
+    getCitizenAppointments(citizen.email).then(setExistingAppointments)
   }, [citizen, navigate])
-
-  const handleServiceSelect = (serviceId) => {
-    setSelectedService(serviceId)
-    setError('')
-  }
-
-  const handleDateToggle = (newDate) => {
-    setDate(newDate)
-    setError('')
-  }
 
   const handleSlotSelect = async (slot) => {
     setHolding(true)
     setError('')
     try {
       const holdSlot = httpsCallable(functions, 'hold_slot')
-      const result = await holdSlot({
-        slotId: slot.id,
-        sessionToken
-      })
-      
-      setHeldSlot({
-        slotId: slot.id,
-        date: slot.date,
-        time: slot.time,
-        duration: slot.duration,
-        heldUntil: result.data.heldUntil,
-        service: selectedService
-      })
-      
+      const result = await holdSlot({ slotId: slot.id, sessionToken })
+      setHeldSlot({ slotId: slot.id, date: slot.date, time: slot.time, duration: slot.duration, heldUntil: result.data.heldUntil, service: selectedService })
       navigate('/review')
     } catch (err) {
       console.error(err)
@@ -98,50 +52,64 @@ export default function ServiceSelect() {
   }
 
   if (!citizen) return null
-
   const selectedServiceData = SERVICES.find(s => s.id === selectedService)
 
   return (
-    <div className="min-h-screen p-4 md:p-8 bg-gray-50">
-      <div className="max-w-4xl mx-auto space-y-6">
-        <h1 className="text-2xl font-semibold">Select a Service</h1>
-        
-        <div className="bg-blue-50 text-blue-800 p-3 rounded text-sm font-medium border border-blue-100">
-          Notice: You have 5 minutes to complete your booking once a slot is selected.
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white border-b border-gray-100 sticky top-0 z-10">
+        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center gap-3">
+          <div className="w-8 h-8 bg-gray-900 rounded-lg flex items-center justify-center">
+            <span className="text-white font-bold text-xs">HQ</span>
+          </div>
+          <span className="text-sm font-semibold text-gray-900">HudumaQ</span>
+          <span className="text-gray-300 text-sm">·</span>
+          <span className="text-sm text-gray-500">Select a service</span>
+        </div>
+      </header>
+
+      <main className="max-w-4xl mx-auto p-6 space-y-6">
+        <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 text-sm text-amber-700 font-medium">
+          You have 5 minutes to complete your booking once a slot is selected.
         </div>
 
-        {error && <div className="text-red-600 text-sm p-3 bg-red-50 rounded border border-red-100">{error}</div>}
+        {error && (
+          <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-sm text-red-600">
+            {error}
+          </div>
+        )}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {SERVICES.map(service => (
-            <ServiceCard
-              key={service.id}
-              service={service.id}
-              title={service.title}
-              duration={service.duration}
-              requirements={service.requirements}
-              selected={selectedService === service.id}
-              citizen={selectedService === service.id ? citizen : null}
-              onSelect={handleServiceSelect}
-            />
-          ))}
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3">Choose a service</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {SERVICES.map(service => (
+              <ServiceCard
+                key={service.id}
+                service={service.id}
+                title={service.title}
+                duration={service.duration}
+                requirements={service.requirements}
+                selected={selectedService === service.id}
+                citizen={selectedService === service.id ? citizen : null}
+                onSelect={(id) => { setSelectedService(id); setError('') }}
+              />
+            ))}
+          </div>
         </div>
 
         {selectedServiceData && (
-          <div className="bg-white p-6 rounded shadow-sm border border-gray-200 animate-in fade-in slide-in-from-bottom-4">
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-4">
-              <h2 className="text-lg font-medium">Available Slots</h2>
-              
-              <div className="flex bg-gray-100 p-1 rounded">
-                <button 
-                  onClick={() => handleDateToggle(todayStr)}
-                  className={`px-4 py-1.5 text-sm rounded transition-colors ${date === todayStr ? 'bg-white shadow-sm border border-gray-200 font-medium text-black' : 'text-gray-500 hover:text-black'}`}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <div className="flex items-center justify-between mb-5">
+              <p className="text-xs font-semibold uppercase tracking-widest text-gray-400">Available slots</p>
+              <div className="flex bg-gray-50 border border-gray-100 p-1 rounded-xl">
+                <button
+                  onClick={() => { setDate(todayStr); setError('') }}
+                  className={`px-4 py-1.5 text-xs font-medium rounded-lg transition-colors ${date === todayStr ? 'bg-white shadow-sm border border-gray-100 text-gray-900' : 'text-gray-400 hover:text-gray-700'}`}
                 >
                   Today
                 </button>
-                <button 
-                  onClick={() => handleDateToggle(tomorrowStr)}
-                  className={`px-4 py-1.5 text-sm rounded transition-colors ${date === tomorrowStr ? 'bg-white shadow-sm border border-gray-200 font-medium text-black' : 'text-gray-500 hover:text-black'}`}
+                <button
+                  onClick={() => { setDate(tomorrowStr); setError('') }}
+                  className={`px-4 py-1.5 text-xs font-medium rounded-lg transition-colors ${date === tomorrowStr ? 'bg-white shadow-sm border border-gray-100 text-gray-900' : 'text-gray-400 hover:text-gray-700'}`}
                 >
                   Tomorrow
                 </button>
@@ -151,15 +119,19 @@ export default function ServiceSelect() {
             <SlotGrid
               date={date}
               service={selectedServiceData.id}
-              slotDuration={selectedServiceData.duration}
               existingAppointments={existingAppointments}
               onSlotSelect={handleSlotSelect}
             />
-            
-            {holding && <div className="mt-4 text-center text-sm text-gray-500 animate-pulse">Holding slot...</div>}
+
+            {holding && (
+              <div className="mt-4 flex items-center justify-center gap-2 text-sm text-gray-400">
+                <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                Holding slot…
+              </div>
+            )}
           </div>
         )}
-      </div>
+      </main>
     </div>
   )
 }

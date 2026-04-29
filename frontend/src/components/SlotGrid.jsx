@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { fetchSlots, isAvailable } from '../lib/slots'
 
-export default function SlotGrid({ date, service, slotDuration, existingAppointments, onSlotSelect }) {
+export default function SlotGrid({ date, service, existingAppointments, onSlotSelect }) {
   const [slots, setSlots] = useState([])
   const [loading, setLoading] = useState(true)
   const [fetchError, setFetchError] = useState(false)
@@ -26,18 +26,16 @@ export default function SlotGrid({ date, service, slotDuration, existingAppointm
 
   const isWithinTwoHours = (slotTime) => {
     const slotDateObj = new Date(`${date}T${slotTime}`)
-    
     return existingAppointments.some(app => {
       if (app.date !== date) return false
       const appDateObj = new Date(`${app.date}T${app.time}`)
-      const diffMs = Math.abs(slotDateObj - appDateObj)
-      return diffMs < 2 * 60 * 60 * 1000 // Less than 2 hours
+      return Math.abs(slotDateObj - appDateObj) < 2 * 60 * 60 * 1000
     })
   }
 
-  if (loading) return <div className="py-8 text-center text-gray-500 animate-pulse">Loading available slots...</div>
-  if (fetchError) return <div className="py-8 text-center text-red-500 text-sm">Could not load slots — please refresh and try again.</div>
-  if (slots.length === 0) return <div className="py-8 text-center text-gray-500">No slots available for this date.</div>
+  if (loading) return <div className="py-10 text-center text-sm text-gray-400 animate-pulse">Loading slots…</div>
+  if (fetchError) return <div className="py-10 text-center text-sm text-red-500">Could not load slots — refresh and try again.</div>
+  if (slots.length === 0) return <div className="py-10 text-center text-sm text-gray-400">No slots available for this date.</div>
 
   return (
     <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2">
@@ -52,10 +50,10 @@ export default function SlotGrid({ date, service, slotDuration, existingAppointm
             key={slot.id}
             disabled={!selectable}
             onClick={() => onSlotSelect(slot)}
-            className={`py-2 px-1 text-sm rounded font-medium transition-colors border ${
-              selectable 
-                ? 'bg-white border-green-600 text-green-700 hover:bg-green-600 hover:text-white'
-                : 'bg-black border-black text-gray-500 cursor-not-allowed'
+            className={`py-2 px-1 text-xs font-medium rounded-xl border transition-all ${
+              selectable
+                ? 'bg-white border-gray-200 text-gray-700 hover:border-gray-900 hover:text-gray-900 hover:shadow-sm'
+                : 'bg-gray-50 border-gray-100 text-gray-300 cursor-not-allowed'
             }`}
           >
             {slot.time}

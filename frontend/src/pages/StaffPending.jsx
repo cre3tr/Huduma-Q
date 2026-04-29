@@ -3,22 +3,24 @@ import { Link, useNavigate } from 'react-router-dom'
 import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore'
 import { httpsCallable } from 'firebase/functions'
 import { db, functions, auth } from '../lib/firebase'
+import { signOutStaff } from '../lib/auth'
 import AppointmentRow from '../components/AppointmentRow'
 
 export default function StaffPending() {
   const navigate = useNavigate()
   const [appointments, setAppointments] = useState([])
   const [loadingIds, setLoadingIds] = useState(new Set())
-  const [error, setError] = useState({})
+  const [rowErrors, setRowErrors] = useState({})
   const [streamError, setStreamError] = useState(false)
+  const [user, setUser] = useState(null)
 
   useEffect(() => {
-    const unsubscribeAuth = auth.onAuthStateChanged(user => {
-      if (!user) navigate('/staff')
+    const unsubscribeAuth = auth.onAuthStateChanged(u => {
+      if (!u) navigate('/staff')
+      else setUser(u)
     })
-    
+
     const today = new Date().toISOString().split('T')[0]
-    
     const q = query(
       collection(db, 'appointments'),
       where('date', '==', today),
@@ -28,79 +30,90 @@ export default function StaffPending() {
 
     const unsubscribeData = onSnapshot(q, (snapshot) => {
       setStreamError(false)
-      const apps = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-      setAppointments(apps)
+      setAppointments(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })))
     }, (err) => {
       console.error('Snapshot error:', err)
       setStreamError(true)
     })
 
-    return () => {
-      unsubscribeAuth()
-      if (unsubscribeData) unsubscribeData()
-    }
+    return () => { unsubscribeAuth(); unsubscribeData() }
   }, [navigate])
 
   const handleVerify = async (appointmentId) => {
     setLoadingIds(prev => new Set(prev).add(appointmentId))
-    setError(prev => ({ ...prev, [appointmentId]: null }))
-    
+    setRowErrors(prev => ({ ...prev, [appointmentId]: null }))
     try {
       const verifyArrival = httpsCallable(functions, 'verify_arrival')
       await verifyArrival({ appointmentId })
     } catch (err) {
       console.error(err)
-      setError(prev => ({ ...prev, [appointmentId]: 'Failed to verify. Try again.' }))
+      setRowErrors(prev => ({ ...prev, [appointmentId]: 'Verification failed — try again.' }))
     } finally {
-      setLoadingIds(prev => {
-        const next = new Set(prev)
-        next.delete(appointmentId)
-        return next
-      })
+      setLoadingIds(prev => { const n = new Set(prev); n.delete(appointmentId); return n })
     }
   }
 
+  const handleSignOut = async () => {
+    await signOutStaff()
+    navigate('/staff')
+  }
+
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
-        <div className="flex items-center gap-4">
-          <div className="w-8 h-8 bg-black text-white rounded-full flex items-center justify-center font-bold text-xs">
-            HQ
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white border-b border-gray-100 sticky top-0 z-10">
+        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-gray-900 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-xs">HQ</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-gray-900">HudumaQ</span>
+              <span className="text-gray-300">·</span>
+              <span className="text-sm text-gray-500">Pending Intakes</span>
+            </div>
           </div>
-          <h1 className="font-semibold text-lg">Today's Pending Intakes</h1>
-        </div>
-        <div className="flex gap-4">
-          <Link to="/staff/resolved" className="text-sm font-medium text-gray-500 hover:text-black">
-            View Resolved
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link to="/staff/resolved" className="text-sm text-gray-500 hover:text-gray-900 font-medium transition-colors">
+              View Resolved
+            </Link>
+            <button
+              onClick={handleSignOut}
+              className="text-sm text-gray-400 hover:text-gray-700 transition-colors"
+            >
+              Sign out
+            </button>
+          </div>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto p-6">
+      <main className="max-w-6xl mx-auto p-6 space-y-4">
         {streamError && (
-          <div className="mb-4 p-3 bg-red-50 text-red-600 rounded text-sm border border-red-100">
+          <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-sm text-red-600">
             Could not connect to appointment stream. Check your connection and refresh.
           </div>
         )}
-        <div className="bg-white rounded border border-gray-200 shadow-sm overflow-hidden">
+
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           {appointments.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">No pending appointments for today.</div>
+            <div className="py-16 text-center">
+              <p className="text-sm text-gray-400">No pending appointments for today.</p>
+            </div>
           ) : (
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left">
               <thead>
-                <tr className="bg-gray-50 border-b border-gray-200 text-xs uppercase tracking-wider text-gray-500">
-                  <th className="p-3 font-medium">Time</th>
-                  <th className="p-3 font-medium">Citizen</th>
-                  <th className="p-3 font-medium">Service</th>
-                  <th className="p-3 font-medium text-right">Action</th>
+                <tr className="border-b border-gray-100">
+                  <th className="px-5 py-3 text-xs font-semibold uppercase tracking-widest text-gray-400">Time</th>
+                  <th className="px-5 py-3 text-xs font-semibold uppercase tracking-widest text-gray-400">Citizen</th>
+                  <th className="px-5 py-3 text-xs font-semibold uppercase tracking-widest text-gray-400">Service</th>
+                  <th className="px-5 py-3 text-xs font-semibold uppercase tracking-widest text-gray-400 text-right">Action</th>
                 </tr>
               </thead>
               <tbody>
                 {appointments.map(app => (
-                  <AppointmentRow 
-                    key={app.id} 
-                    appointment={app} 
-                    showVerifyButton={true}
+                  <AppointmentRow
+                    key={app.id}
+                    appointment={app}
+                    showVerifyButton
                     loading={loadingIds.has(app.id)}
                     onVerify={handleVerify}
                   />
@@ -109,9 +122,10 @@ export default function StaffPending() {
             </table>
           )}
         </div>
-        {Object.entries(error).map(([id, msg]) => msg && (
-          <div key={id} className="mt-4 p-3 bg-red-50 text-red-600 rounded text-sm border border-red-100">
-            Error on {id}: {msg}
+
+        {Object.entries(rowErrors).map(([id, msg]) => msg && (
+          <div key={id} className="bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-sm text-red-600">
+            {msg}
           </div>
         ))}
       </main>

@@ -11,6 +11,15 @@ const serviceLabels = {
   collect_id: "Collect ID"
 }
 
+function Row({ label, value }) {
+  return (
+    <div className="flex justify-between items-baseline py-2.5 border-b border-gray-50 last:border-0">
+      <span className="text-xs text-gray-400 font-medium uppercase tracking-wider">{label}</span>
+      <span className="text-sm font-medium text-gray-900 text-right ml-4">{value}</span>
+    </div>
+  )
+}
+
 export default function Review() {
   const navigate = useNavigate()
   const { citizen, heldSlot, sessionToken, setConfirmedAppointment, setHeldSlot } = useBooking()
@@ -24,10 +33,10 @@ export default function Review() {
 
   if (!citizen || !heldSlot) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="text-center">
-          <p className="text-red-600 mb-4">Missing booking details.</p>
-          <button onClick={() => navigate('/')} className="underline">Start over</button>
+          <p className="text-sm text-gray-500 mb-4">Missing booking details.</p>
+          <button onClick={() => navigate('/')} className="text-sm font-medium text-gray-900 underline underline-offset-4">Start over</button>
         </div>
       </div>
     )
@@ -38,11 +47,7 @@ export default function Review() {
     setError('')
     try {
       const confirmBooking = httpsCallable(functions, 'confirm_booking')
-      const result = await confirmBooking({
-        slotId: heldSlot.slotId,
-        sessionToken
-      })
-      
+      const result = await confirmBooking({ slotId: heldSlot.slotId, sessionToken })
       setConfirmedAppointment({
         appointmentId: result.data.appointmentId,
         service: heldSlot.service,
@@ -56,54 +61,66 @@ export default function Review() {
       navigate('/success')
     } catch (err) {
       console.error(err)
-      setError('Booking confirmation unavailable — please try again shortly.')
+      setError('Booking confirmation failed — please try again.')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white p-8 rounded shadow-sm border border-gray-200">
-        <h1 className="text-2xl font-semibold mb-6">Review Booking</h1>
-        
-        <div className="space-y-6 mb-8">
-          <div>
-            <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Citizen Details</h2>
-            <div className="bg-gray-50 p-3 rounded text-sm space-y-1">
-              <p><span className="font-medium">Name:</span> {citizen.firstName} {citizen.lastName}</p>
-              <p><span className="font-medium">ID Number:</span> {citizen.idNumber}</p>
-              <p><span className="font-medium">Phone:</span> {citizen.phone}</p>
-            </div>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-10 h-10 bg-gray-900 rounded-xl mb-4">
+            <span className="text-white font-bold text-sm">HQ</span>
           </div>
-          
-          <div>
-            <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Appointment Details</h2>
-            <div className="bg-gray-50 p-3 rounded text-sm space-y-1">
-              <p><span className="font-medium">Service:</span> {serviceLabels[heldSlot.service] || heldSlot.service}</p>
-              <p><span className="font-medium">Date:</span> {heldSlot.date}</p>
-              <p><span className="font-medium">Time:</span> {heldSlot.time}</p>
-              <p><span className="font-medium">Location:</span> Huduma Centre Nairobi CBD</p>
-            </div>
-          </div>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Review your booking</h1>
+          <p className="text-sm text-gray-500 mt-1.5">Confirm everything looks correct before submitting.</p>
         </div>
 
-        {heldSlot?.heldUntil && (
-          <div className="flex items-center justify-between mb-4 p-3 bg-gray-50 rounded border border-gray-200">
-            <span className="text-sm text-gray-500">Time remaining to confirm</span>
-            <CountdownTimer expiresAt={heldSlot.heldUntil} onExpire={handleExpire} />
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 space-y-6">
+
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-1">Citizen</p>
+            <div>
+              <Row label="Name" value={`${citizen.firstName} ${citizen.lastName}`} />
+              <Row label="ID Number" value={citizen.idNumber} />
+              <Row label="Phone" value={citizen.phone} />
+            </div>
           </div>
-        )}
 
-        {error && <div className="text-red-600 text-sm p-3 bg-red-50 rounded mb-4">{error}</div>}
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-1">Appointment</p>
+            <div>
+              <Row label="Service" value={serviceLabels[heldSlot.service] || heldSlot.service} />
+              <Row label="Date" value={heldSlot.date} />
+              <Row label="Time" value={heldSlot.time} />
+              <Row label="Location" value="Huduma Centre Nairobi CBD" />
+            </div>
+          </div>
 
-        <button
-          onClick={handleConfirm} 
-          disabled={loading}
-          className="w-full bg-black text-white p-3 rounded font-medium disabled:opacity-50"
-        >
-          {loading ? 'Confirming...' : 'Confirm Appointment'}
-        </button>
+          {heldSlot?.heldUntil && (
+            <div className="flex items-center justify-between bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
+              <span className="text-xs font-medium text-amber-700">Slot reserved for</span>
+              <CountdownTimer expiresAt={heldSlot.heldUntil} onExpire={handleExpire} />
+            </div>
+          )}
+
+          {error && (
+            <div className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
+              {error}
+            </div>
+          )}
+
+          <button
+            onClick={handleConfirm}
+            disabled={loading}
+            className="w-full bg-gray-900 text-white py-2.5 rounded-xl font-medium text-sm hover:bg-gray-800 transition-colors disabled:opacity-40"
+          >
+            {loading ? 'Confirming…' : 'Confirm Appointment'}
+          </button>
+        </div>
       </div>
     </div>
   )

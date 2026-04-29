@@ -31,8 +31,8 @@ export default function CountdownTimer({ expiresAt, onExpire }) {
   const isWarning = timeLeft < 60
 
   return (
-    <div className={`font-mono text-xl font-bold ${isWarning ? 'text-red-600' : 'text-black'}`}>
+    <span className={`font-mono text-sm font-bold tabular-nums ${isWarning ? 'text-red-600' : 'text-amber-700'}`}>
       {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
-    </div>
+    </span>
   )
 }
