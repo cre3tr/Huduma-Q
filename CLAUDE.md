@@ -134,3 +134,12 @@ APP_URL
 2. Verify staff login works at `/staff`
 3. Run full citizen flow: form → email → verify → slot → confirm → success
 4. Check Brevo → Transactional → Logs for email delivery
+
+---
+
+## Toolchain note — 2026-08-03
+
+The frontend build now runs **vite 8 (Rolldown)**, up from vite 5, with
+`@vitejs/plugin-react` 6 — the two are peer-locked and cannot move independently.
+See `DEPENDENCIES.md` at the repo root for the reasoning and for the one
+remaining, unfixable `react-router` advisory.
