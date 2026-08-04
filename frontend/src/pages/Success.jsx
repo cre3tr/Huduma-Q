@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router'
 import { useBooking } from '../context/BookingContext'
 import { generatePDF } from '../lib/pdf'
 import { generateICS } from '../lib/ics'
