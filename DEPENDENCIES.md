@@ -3,6 +3,38 @@
 Note: the npm manifest for this repo lives in `frontend/`, not at the root.
 This record sits at the repo root because it covers the repo, not the package.
 
+## DEP-3: fflate `unzipSync` DoS (GHSA, fixed in 0.8.3) — accepted, not fixed — 2026-09-05
+
+**Context:** Dependabot alert #37, medium severity, `fflate@0.8.2`, `scope:
+runtime`, "unzipSync can enter an infinite loop when parsing malformed ZIP64
+archives." Arrives via `jspdf@4.2.1 → fflate` (`npm ls fflate` — one path, no
+alternates). `jspdf` is genuinely used here for client-side PDF generation
+(appointment confirmations), so GitHub's `runtime` scope call is correct.
+
+**Decision:** do not bump. Traced every reference to `fflate` inside jsPDF's
+actual bundled code — both `dist/jspdf.es.js` (browser) and
+`dist/jspdf.node.js` — and every single one is `zlibSync`
+(`jspdf.es.js:52,13309,14857,14878`; same shape in the node bundle).
+`zlibSync` is **compression**, used to shrink outgoing PDF stream data.
+`unzipSync` — the function this CVE is actually about, which parses an
+**incoming** ZIP64 archive and can infinite-loop on malformed input — is never
+imported or called anywhere in jsPDF. This repo's own `src/` also never calls
+`fflate` directly (`grep -rn "unzipSync\|fflate" src/` → zero hits). The
+vulnerable function is present in the dependency tree; the vulnerable code
+path is not reachable from anything this app does.
+
+**Consequences:** no risk today. If jsPDF ever starts using `unzipSync`
+internally (e.g. a future font-embedding feature that unpacks a font
+collection), or a future dependency reaches it some other way, this
+conclusion needs re-deriving, not assumed to still hold — check `npm ls
+fflate` and re-grep jsPDF's bundle for `unzipSync` before trusting this entry
+again per Iron Law VI. The alert stays open on GitHub; this is a documented,
+deliberate accept, not an oversight.
+
+**Verified on:** `frontend/node_modules/jspdf@4.2.1` — 2026-09-05.
+**Confidence:** HIGH — read directly from jsPDF's own bundled source, both
+browser and Node builds; not inferred from the advisory or the package name.
+
 ## DEP-2: vite 5 → 8 with @vitejs/plugin-react — 2026-08-03
 
 **Context:** `@vitejs/plugin-react` 6 peer-requires `vite ^8`, and plugin-react 4
