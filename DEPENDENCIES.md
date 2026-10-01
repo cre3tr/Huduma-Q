@@ -3,6 +3,30 @@
 Note: the npm manifest for this repo lives in `frontend/`, not at the root.
 This record sits at the repo root because it covers the repo, not the package.
 
+## DEP-6: eslint-plugin-react-hooks 5.2.0 → 7.1.1 — one new finding, fix deferred — 2026-10-01
+**Context:** Dependabot #11 was green, but `vite build` never runs lint, so
+green proved nothing about this package. v7 adds the React-Compiler rules and
+pulls in 26 packages (`@babel/core` toolchain, `hermes-parser`, `zod`). None
+of them appears in `npm audit`. Its 5 hits are the known grpc chain plus
+fflate.
+**Decision (Ian, 2026-10-01):** Take v7 now, and defer the one real finding.
+Lint over the same 27 files goes **40 → 41**. The only new rule hit is
+`react-hooks/set-state-in-effect` at `src/components/CountdownTimer.jsx:14`.
+That's a synchronous `setTimeLeft(calculateTimeLeft())` at the top of the
+effect, an extra render whenever `expiresAt` changes.
+**Deferred fix, ready to apply.** Keep `now` in state
+(`useState(() => Date.now())`), have the interval only call
+`setNow(Date.now())`, and compute `timeLeft` from `expiresAt` and `now`
+during render. Fire `onExpire` from the interval when it reaches 0, as
+today. **Why deferred:** this timer drives the booking-hold expiry
+(`Review.jsx:106` → `onExpire`), and the Claude Browser pane throttles
+`setInterval`, so the change can't be verified there. Verify it in a real
+browser by holding a slot and letting it expire.
+**Verified on:** main — see the commit adding this entry. `npm ci` 0 from
+the grafted lockfile (10 `libc` fields kept), build 0, CSS class-identical
+(173, preflight present).
+**Confidence:** HIGH on the counts (per-rule JSON diff over the same 27 files).
+
 ## DEP-5: `@grpc/grpc-js` 1.9.16 under firebase — blocked upstream, not overridden — 2026-10-01
 **Context:** 2 advisories (high + low) were filed 2026-10-01, both fixed in 1.13.6.
 The path is `firebase@12.19.0 → @firebase/firestore@4.17.2 → @grpc/grpc-js@1.9.16`.
