@@ -8,5 +8,10 @@ updates:
     groups:
       safe-updates:
         update-types: ["patch", "minor"]
+    ignore:
+      # Blocked upstream: eslint-plugin-react@7.37.5 (latest) peers eslint <= ^9.7.
+      # Remove once a release admits ^10. See DEPENDENCIES.md DEP-4.
+      - dependency-name: "eslint"
+        versions: [">=10.0.0"]
     commit-message:
       prefix: "chore(deps)"

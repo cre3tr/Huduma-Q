@@ -3,6 +3,35 @@
 Note: the npm manifest for this repo lives in `frontend/`, not at the root.
 This record sits at the repo root because it covers the repo, not the package.
 
+## DEP-5: `@grpc/grpc-js` 1.9.16 under firebase — blocked upstream, not overridden — 2026-10-01
+**Context:** 2 advisories (high + low) were filed 2026-10-01, both fixed in 1.13.6.
+The path is `firebase@12.19.0 → @firebase/firestore@4.17.2 → @grpc/grpc-js@1.9.16`.
+4.17.2 is the latest firestore and declares `~1.9.0`, a tilde range that can
+never reach 1.13.
+**Decision:** Accepted and recorded. **No `overrides` entry.** Forcing a minor
+jump of firebase's own transport layer is a different risk class from a pure-JS
+pin. **It does not ship, measured:** `grep -l 'grpc-js\|@grpc'` over the 4
+built JS chunks at `2d73ee2` returns 0. Controls `webchannel` and
+`firestore.googleapis.com` each hit 1 chunk. The only "grpc" strings in the
+bundle are Firestore's own GRPC status codes and `grpcFlowControlWindow`, not
+the Node package.
+**Recheck trigger:** a `@firebase/firestore` release whose grpc-js range admits
+≥ 1.13.6. Then `npm update` alone should clear it.
+**Verified on:** main @ `2d73ee2` — 3 open alerts: these 2, plus fflate (DEP-3).
+**Confidence:** HIGH on both the block (manifest range read from the
+registry) and non-shipping (bundle grep, with a positive control).
+
+## DEP-4: eslint 10 — blocked by eslint-plugin-react — 2026-10-01
+**Context:** Dependabot #10 (eslint 9.39.4 → 10.11.0) failed `npm install` with
+ERESOLVE. `eslint-plugin-react@7.37.5` is the latest, and it peers
+`eslint: ^3 || … || ^9.7`.
+**Decision:** Don't take eslint 10. A scoped Dependabot `ignore` on
+`eslint >= 10.0.0` in `.github/dependabot.yml`. #10 closed.
+**Recheck trigger:** an `eslint-plugin-react` release whose peer admits `^10`.
+Remove the ignore and bump both together, as coupled majors in one install.
+**Verified on:** main — see the commit adding this entry.
+**Confidence:** HIGH — peer range read from the registry 2026-10-01.
+
 ## DEP-3: fflate `unzipSync` DoS (GHSA, fixed in 0.8.3) — accepted, not fixed — 2026-09-05
 
 **Context:** Dependabot alert #37, medium severity, `fflate@0.8.2`, `scope:
