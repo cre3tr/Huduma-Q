@@ -1,23 +1,20 @@
 import { useState, useEffect } from 'react'
 
+const secondsLeft = (expiresAt, now) => {
+  const difference = new Date(expiresAt).getTime() - now
+  return difference > 0 ? Math.floor(difference / 1000) : 0
+}
+
 export default function CountdownTimer({ expiresAt, onExpire }) {
-  const [timeLeft, setTimeLeft] = useState(0)
+  const [now, setNow] = useState(() => Date.now())
+  const timeLeft = secondsLeft(expiresAt, now)
 
   useEffect(() => {
-    const calculateTimeLeft = () => {
-      const now = new Date().getTime()
-      const expiry = new Date(expiresAt).getTime()
-      const difference = expiry - now
-      return difference > 0 ? Math.floor(difference / 1000) : 0
-    }
-
-    setTimeLeft(calculateTimeLeft())
-
     const timer = setInterval(() => {
-      const remaining = calculateTimeLeft()
-      setTimeLeft(remaining)
-      
-      if (remaining <= 0) {
+      const t = Date.now()
+      setNow(t)
+
+      if (secondsLeft(expiresAt, t) <= 0) {
         clearInterval(timer)
         onExpire()
       }

@@ -20,6 +20,26 @@ the round-trip. Note: `src/lib/pdf.js` calls `new jsPDF()` with jsPDF's default 
 PDFs may not reach fflate at all. Not measured.
 **Confidence:** HIGH.
 
+## DEP-7: CountdownTimer `set-state-in-effect` fixed — the DEP-6 deferral — 2026-10-02
+**Context:** DEP-6 took react-hooks 7 and deferred its one new finding.
+**Decision:** Applied the fix DEP-6 described. `now` lives in state, `timeLeft`
+is derived during render from `expiresAt` and `now`, and the interval only calls
+`setNow`. `onExpire` fires from the interval at the same threshold as before
+(floored seconds ≤ 0). The pure `secondsLeft(expiresAt, now)` sits at module
+level, so the effect's deps stay `[expiresAt, onExpire]` with no disable comment.
+**Consequences:** Lint goes **41 → 40** over the same 27 files. Per-rule diff:
+`react-hooks/set-state-in-effect` 1 → 0, no other rule moved. Build 0. CSS is
+class-identical (173, preflight present). The effect no longer runs its
+synchronous first `setState`, and the first render already shows the right
+time instead of `00:00`.
+**Verification limit:** the Claude Browser pane could not observe this. On
+2026-10-02 it read `visibilityState: hidden`, a 0×0 viewport and a
+`chrome-error://` page, so its timer behaviour is no evidence either way.
+**Ian's real-browser check** (hold a slot on Review, watch it count down, let it
+expire, confirm the redirect) gates the push.
+**Confidence:** HIGH on the lint and build counts. MEDIUM on runtime behaviour
+until that check passes.
+
 ## DEP-6: eslint-plugin-react-hooks 5.2.0 → 7.1.1 — one new finding, fix deferred — 2026-10-01
 **Context:** Dependabot #11 was green, but `vite build` never runs lint, so
 green proved nothing about this package. v7 adds the React-Compiler rules and
