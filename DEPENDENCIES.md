@@ -3,6 +3,36 @@
 Note: the npm manifest for this repo lives in `frontend/`, not at the root.
 This record sits at the repo root because it covers the repo, not the package.
 
+## DEP-9: Cloud Functions requirements pinned — 2026-10-03
+**Context:** `functions/requirements.txt` held floors only (`firebase-functions>=0.1.0`,
+`firebase-admin>=6.5.0`, `sib-api-v3-sdk>=7.6.0`). Every `firebase deploy` rebuilds
+all 5 functions from whatever PyPI has that day: firebase-functions **0.6.0** and
+firebase-admin **7.7.0** on 2026-10-02. Each deploy was therefore an unreviewed upgrade
+of the booking flow. Which versions were live then is [UNKNOWN]. Deploying the
+one-line `firebase_auth` import removal (`0874f33`) would have shipped such an upgrade.
+**Decision (Ian, 2026-10-02):** pin to the versions in the local `functions/venv`,
+which the emulator runs: `firebase-functions==0.5.0`, `firebase-admin==7.4.0`,
+`sib-api-v3-sdk==7.6.0` (`8719359`). Transitive packages (`google-cloud-firestore`
+etc.) still float. Take a newer version by bumping the pin and re-running the
+emulator test.
+**Emulator test** (project `demo-hudumaq`, so nothing reached production; dummy
+Brevo secrets in a temporary `functions/.secret.local`, deleted afterwards):
+- `hold_slot` A → 200 `success`, `heldUntil` +5 min.
+- `hold_slot` B on the same slot → `UNAVAILABLE "Slot is currently held."` This is the
+  control that the transaction reads slot state.
+- `confirm_booking` B → `FAILED_PRECONDITION "Slot not held by this session."`
+- `confirm_booking` A → the transaction committed: slot `booked`, `bookedBy` set,
+  session `used`, appointment `pending` with every field. The call returned 500 only
+  because the dummy Brevo key got a 401 *after* the commit.
+- `confirm_booking` A again → `FAILED_PRECONDITION "Session already used."`
+**Finding, not changed here:** `confirm_booking` sends the confirmation email after
+the transaction and lets a Brevo failure raise, so a real Brevo outage shows the user
+an error for a booking that *did* succeed. That behaviour predates this entry.
+**Deploy:** the auto-mode permission check blocked it, so Ian runs
+`firebase deploy --only functions --project hudumaq-2c732`.
+**Confidence:** HIGH on the pin and the emulator result. The deployed result is not
+yet observed.
+
 ## DEP-8: fflate 0.8.2 → 0.8.3 in range — alert #37 fixed, not just accepted — 2026-10-02
 **Context:** DEP-3 accepted alert #37 (GHSA-px8p-9vwx-vf98, `< 0.8.3`) as unreachable, because jsPDF only calls
 `zlibSync`. That reasoning still holds. DEP-3 never asked whether a fix was in range, and it is: jsPDF 4.2.1 declares
