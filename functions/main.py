@@ -4,7 +4,7 @@ import traceback
 from datetime import datetime, timedelta, timezone
 
 import firebase_admin
-from firebase_admin import auth as firebase_auth, firestore
+from firebase_admin import firestore
 from firebase_functions import https_fn, scheduler_fn, options
 
 from codes import generate_code
