@@ -3,6 +3,23 @@
 Note: the npm manifest for this repo lives in `frontend/`, not at the root.
 This record sits at the repo root because it covers the repo, not the package.
 
+## DEP-8: fflate 0.8.2 → 0.8.3 in range — alert #37 fixed, not just accepted — 2026-10-02
+**Context:** DEP-3 accepted alert #37 (GHSA-px8p-9vwx-vf98, `< 0.8.3`) as unreachable, because jsPDF only calls
+`zlibSync`. That reasoning still holds. DEP-3 never asked whether a fix was in range, and it is: jsPDF 4.2.1 declares
+`fflate: ^0.8.1`, and 0.8.3 is published. Fixing it costs one lockfile entry.
+**Decision:** `npm update fflate` in `frontend/`, then `lock-graft.js` for fflate only. The lockfile diff is the 3
+lines of the fflate entry (version, resolved, integrity), and the integrity equals `npm view fflate@0.8.3
+dist.integrity`. No `libc` line moved. Committed on `origin/main` ahead of DEP-7, so it ships without waiting for
+DEP-7's browser check.
+**Consequences:** Supersedes DEP-3's "do not bump". DEP-3's reachability analysis stays the record of why the
+alert was never urgent.
+**Verified on:** the commit adding this entry. Gates match main: `npm ci` 0, build 0, lint 41 (the DEP-6 baseline),
+173 CSS classes, identical. Functional check: the installed jsPDF node build with fflate 0.8.3 wrote a compressed
+PDF (`compress: true`). Its one FlateDecode stream inflates with Node's `zlib`, and the control string survives
+the round-trip. Note: `src/lib/pdf.js` calls `new jsPDF()` with jsPDF's default `compress: false`, so the app's own
+PDFs may not reach fflate at all. Not measured.
+**Confidence:** HIGH.
+
 ## DEP-6: eslint-plugin-react-hooks 5.2.0 → 7.1.1 — one new finding, fix deferred — 2026-10-01
 **Context:** Dependabot #11 was green, but `vite build` never runs lint, so
 green proved nothing about this package. v7 adds the React-Compiler rules and
