@@ -37,8 +37,22 @@ time instead of `00:00`.
 `chrome-error://` page, so its timer behaviour is no evidence either way.
 **Ian's real-browser check** (hold a slot on Review, watch it count down, let it
 expire, confirm the redirect) gates the push.
-**Confidence:** HIGH on the lint and build counts. MEDIUM on runtime behaviour
-until that check passes.
+**Runtime check, done 2026-10-02 (evening):** headless Chrome 
+(`--headless=new`), with a renderer control of 62 rAF ticks in 1 s. It mounted the
+real `CountdownTimer.jsx`, bundled by this repo's vite 8.3.1 and React, in an
+isolated harness with three timers: 9.5 s, already expired, and 66 s.
+- Readings at 1 s intervals: `00:05 → 00:04 → 00:03 → 00:02 → 00:01 → 00:00`.
+- `onExpire`: 0 calls before expiry, exactly 1 at expiry, and still 1 three
+  seconds later, so the interval is cleared. The already-expired timer fired once.
+- The 66 s timer read `01:01`, `01:00` (amber), then `00:59` (red), which is the
+  `< 60` warning threshold.
+- 0 exceptions and 0 console errors.
+
+No slot was held in production, because that writes a real hold to Firestore.
+The redirect on expiry is the parent's `onExpire` handler, which this change does
+not touch. The diff is `CountdownTimer.jsx` and this file only.
+**Confidence:** HIGH on the lint and build counts, and HIGH on the timer's
+runtime behaviour. The end-to-end redirect was not exercised.
 
 ## DEP-6: eslint-plugin-react-hooks 5.2.0 → 7.1.1 — one new finding, fix deferred — 2026-10-01
 **Context:** Dependabot #11 was green, but `vite build` never runs lint, so
