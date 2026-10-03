@@ -50,6 +50,8 @@ export default function Review() {
       const result = await confirmBooking({ slotId: heldSlot.slotId, sessionToken })
       setConfirmedAppointment({
         appointmentId: result.data.appointmentId,
+        // absent from older deploys of confirm_booking, which raised instead
+        emailSent: result.data.emailSent !== false,
         service: heldSlot.service,
         date: heldSlot.date,
         time: heldSlot.time,

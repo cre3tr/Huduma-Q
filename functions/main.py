@@ -213,7 +213,9 @@ def confirm_booking(req: https_fn.CallableRequest):
     transaction = db.transaction()
     confirm_in_transaction(transaction)
 
-    # Send confirmation email (after transaction commits)
+    # Send confirmation email (after transaction commits). The booking is already
+    # committed here, so an email failure must not be reported as a failed booking:
+    # the session is spent, and a retry would only see "Session already used."
     slot_data = slot_ref.get().to_dict()
     appointment_data = {
         "service": slot_data["service"],
@@ -221,9 +223,14 @@ def confirm_booking(req: https_fn.CallableRequest):
         "time": slot_data["time"],
         "centreLocation": "Huduma Centre Nairobi CBD",
     }
-    _send_confirmation_email(session["email"], appointment_data)
+    email_sent = True
+    try:
+        _send_confirmation_email(session["email"], appointment_data)
+    except Exception:
+        email_sent = False
+        logging.error(f"confirm_booking: appointment {appointment_id} committed, confirmation email failed:\n{traceback.format_exc()}")
 
-    return {"success": True, "appointmentId": appointment_id}
+    return {"success": True, "appointmentId": appointment_id, "emailSent": email_sent}
 
 @https_fn.on_call(region="us-central1")
 def verify_arrival(req: https_fn.CallableRequest):

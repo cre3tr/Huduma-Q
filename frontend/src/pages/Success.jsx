@@ -53,7 +53,11 @@ export default function Success() {
             </svg>
           </div>
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Booking confirmed</h1>
-          <p className="text-sm text-gray-500 mt-1.5">Check your email for a confirmation receipt.</p>
+          <p className="text-sm text-gray-500 mt-1.5">
+            {confirmedAppointment.emailSent
+              ? 'Check your email for a confirmation receipt.'
+              : 'Your confirmation email is delayed. Download the PDF below as your receipt.'}
+          </p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 space-y-6">
