@@ -3,6 +3,22 @@
 Note: the npm manifest for this repo lives in `frontend/`, not at the root.
 This record sits at the repo root because it covers the repo, not the package.
 
+## DEP-10: autoprefixer, postcss, @types/react(-dom) removed; tailwind.config.js deleted — 2026-10-03
+**Context:** cleanup Tier B (`haven-ea/references/cleanup/2026-10-02/Huduma-Q.md`), ruled on by Ian
+2026-10-03 (`haven-ea/decisions/log.md`): remove each only if the build stays identical.
+**Decision:** all four devDependencies and the v3-style `frontend/tailwind.config.js` are gone, and
+`postcss.config.js` lists only `@tailwindcss/postcss`.
+- Built CSS is byte-identical after each step (md5 `83607c0d…`).
+- **Control:** removing `@tailwindcss/postcss` itself changes the CSS (21,637 bytes, a different md5),
+  so the config is read and autoprefixer really added nothing.
+- `postcss` stays installed through `@tailwindcss/postcss` and `vite` (`npm ls postcss`).
+- The lockfile was rebuilt from HEAD minus the 6 departed entries, plus the new root manifest. It is
+  JSON-equal to npm's own output, and there are 0 `libc` deletions.
+- The ESLint `settings.react.version` moved from `'18.3'` to `'detect'`.
+**Consequences:** `npm ci` 0, build 0. Lint stays at 40 problems, the same set by file and line, now
+over 26 files instead of 27 (`tailwind.config.js` was one of them).
+**Confidence:** HIGH.
+
 ## DEP-9: Cloud Functions requirements pinned — 2026-10-03
 **Context:** `functions/requirements.txt` held floors only (`firebase-functions>=0.1.0`,
 `firebase-admin>=6.5.0`, `sib-api-v3-sdk>=7.6.0`). Every `firebase deploy` rebuilds
