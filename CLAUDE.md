@@ -6,7 +6,7 @@ A two-sided web app for booking ID service appointments at Kenyan Huduma Centres
 
 ## Current Status (as of 2026-04-29)
 
-**The core application is fully implemented.** All pages, components, cloud functions, and utilities are written and wired together. The app has not been deployed to production.
+**The core application is fully implemented.** All pages, components, cloud functions, and utilities are written and wired together. *(Corrected 2026-10-03: it is deployed. The frontend is on Vercel and all 5 functions were redeployed 2026-10-03; see `DEPENDENCIES.md` DEP-9. The pre-launch checklist below is the original April list, kept as written.)*
 
 ### What's done
 - Complete citizen booking flow: Landing → CheckEmail → Verify → ServiceSelect → Review → Success → ExpiredLink
@@ -27,7 +27,7 @@ A two-sided web app for booking ID service appointments at Kenyan Huduma Centres
 - [ ] Add Vercel domain to Firebase Auth authorized domains (staff Google Sign-In fails without this)
 - [ ] Log in as staff → copy UID from Firebase Console → update `seed/seed.py` → run it
 - [ ] Re-run `seed.py` each morning of the demo (slots cover today + tomorrow only)
-- [ ] `.env.example` file missing from `frontend/` — all required vars are in `docs/spec.md` and `docs/deploy.md`
+- [x] `frontend/.env.example` exists and is tracked (6 vars). *(This line said "missing" until 2026-10-03.)*
 
 ---
 
@@ -35,7 +35,7 @@ A two-sided web app for booking ID service appointments at Kenyan Huduma Centres
 
 | Layer | Tech |
 |---|---|
-| Frontend | React 18 + Vite + React Router 6 + Tailwind CSS |
+| Frontend | React 19 + Vite 8 + React Router 8 + Tailwind CSS 4 (installed versions, read from `node_modules` 2026-10-03) |
 | Hosting | Vercel (frontend), Firebase/GCP (backend) |
 | Database | Firestore |
 | Auth | Firebase Auth — Google provider (staff only) |
@@ -103,6 +103,8 @@ Feedback form is an external Google Form linked in resolved/missed emails. Zero 
 - `appointments` Firestore rule allows read by any authenticated Google user, not just verified staff. `verify_arrival` Cloud Function enforces staff check server-side — safe for demo.
 - The 2-hour gap rule between a citizen's own bookings is enforced client-side only (`SlotGrid.jsx`). Savvy users can bypass by calling `hold_slot` directly.
 - Staff dashboard pages (`StaffPending`, `StaffResolved`) only check Firebase Auth presence, not the `staff/` doc, on mount. Backend enforces this for all write actions.
+- `confirm_booking` sends the confirmation email **after** the booking transaction commits. Since 2026-10-03 an email failure no longer fails the call: it logs the traceback and returns `emailSent: false`, and `Success.jsx` tells the citizen the email is delayed and points at the PDF receipt. Before that, a Brevo outage showed "Booking confirmation failed" for a booking that had succeeded, and a retry hit "Session already used".
+- **The Firestore emulator does not enforce composite indexes.** Measured 2026-10-03: StaffPending's query (`date ==`, `status ==`, `orderBy time`) needs composite index #2 in production but succeeds in the emulator. So an emulator run can never show that an index is removable. That is why composite index #1 `appointments(date, status)` was kept.
 
 ---
 
