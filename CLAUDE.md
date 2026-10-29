@@ -143,5 +143,6 @@ APP_URL
 
 The frontend build now runs **vite 8 (Rolldown)**, up from vite 5, with
 `@vitejs/plugin-react` 6 — the two are peer-locked and cannot move independently.
-See `DEPENDENCIES.md` at the repo root for the reasoning and for the one
-remaining, unfixable `react-router` advisory.
+See `DEPENDENCIES.md` at the repo root for the reasoning. The `react-router`
+advisory it once called unfixable closed when the app moved to `react-router`
+8 (`9a65c71`, 2026-08-04; 8.4.0 installed). 0 open Dependabot alerts, 2026-10-29.

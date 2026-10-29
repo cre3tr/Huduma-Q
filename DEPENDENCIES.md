@@ -223,6 +223,10 @@ re-export shim depending on `react-router@7.18.2`. Closing it means migrating
 imports to `react-router@8` directly, which is a repo-wide mechanical change with
 a real test burden. Accepted, not forgotten.
 
+**Superseded the next day:** `9a65c71` (2026-08-04) did that migration,
+`react-router-dom` 7 → `react-router` 8 (8.4.0 installed now, past the 8.3.0
+patch), so GHSA-qwww-vcr4-c8h2 is closed. *(Noted 2026-10-29.)*
+
 Separately, `npm run lint` exits 1 both before and after with 39 pre-existing
 `react/prop-types` errors. Unrelated to this work and left untouched.
 
