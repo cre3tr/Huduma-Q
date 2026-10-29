@@ -30,6 +30,12 @@ receipt."
 
 **Deploy:** the frontend ships with the push. The functions need
 `firebase deploy --only functions --project hudumaq-2c732` (Ian).
+*Done, confirmed 2026-10-29:* `firebase functions:list --json` shows all five
+functions ACTIVE on `python312`, and each one's source object has a GCS
+`generation` of 2026-10-03 10:18–10:19 UTC (13:18 EAT). That is after this
+entry's commit (`6f3d694`, 10:37 EAT), and no `functions/` commit has landed
+since. The upload's contents weren't diffed, so it's [HIGH] that a deploy
+happened after the fix and [MEDIUM] that it carries it.
 
 ### The Firestore emulator cannot test index removal, 2026-10-03
 
