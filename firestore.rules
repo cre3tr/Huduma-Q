@@ -2,9 +2,11 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Sessions: anyone can read by exact doc ID (magic link), Cloud Functions write
+    // Sessions: anyone can fetch one doc by its exact ID (the magic link), but
+    // nobody can list the collection. `get`, not `read`: `read` also grants
+    // `list`. Cloud Functions write.
     match /sessions/{docId} {
-      allow read: if true;
+      allow get: if true;
       allow write: if false;  // Cloud Functions only via Admin SDK
     }
 
