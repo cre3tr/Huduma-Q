@@ -34,7 +34,11 @@ check on mount), `32ea61e` (headers and CSP in `frontend/vercel.json`),
   - headless Chrome found 0 CSP violations on `/` and `/staff`, with the
     banner rendered, while an injected inline script and style were blocked.
 
-  Not exercised: staff Google sign-in and a full booking with a real email.
+  ~~Not exercised: staff Google sign-in~~. Ian confirmed on production on
+  2026-11-04 that it works under the new CSP: the Google popup, the
+  `staff/{uid}` check on mount, and StaffPending's staff-only `appointments`
+  query, which rendered "No pending appointments for today" with no permission
+  error. Still not exercised: a full booking with a real email.
 - **The Firebase CLI needs `functions/venv`** to discover the Python
   functions. Recreate it with `py -3.14 -m venv functions/venv` and then
   `functions/venv/Scripts/python.exe -m pip install -r functions/requirements.txt`.
