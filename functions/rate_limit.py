@@ -56,3 +56,20 @@ def check_and_count(db, email: str, now) -> None:
         transaction.set(day_ref, {"count": day_count + 1, "updatedAt": now})
 
     run(db.transaction())
+
+
+def refund(db, email: str, now) -> None:
+    """Undo one check_and_count, for a link that was never sent. Never below 0."""
+    email_ref = db.collection(COLLECTION).document(email_key(email))
+    day_ref = db.collection(COLLECTION).document(day_key(now))
+
+    @firestore.transactional
+    def run(transaction):
+        email_snap = email_ref.get(transaction=transaction)
+        day_snap = day_ref.get(transaction=transaction)
+        if email_snap.exists and email_snap.to_dict().get("count", 0) > 0:
+            transaction.update(email_ref, {"count": email_snap.to_dict()["count"] - 1, "updatedAt": now})
+        if day_snap.exists and day_snap.to_dict().get("count", 0) > 0:
+            transaction.update(day_ref, {"count": day_snap.to_dict()["count"] - 1, "updatedAt": now})
+
+    run(db.transaction())

@@ -9,7 +9,7 @@ from firebase_functions import https_fn, scheduler_fn, options
 
 from codes import generate_code
 from cleanup import purge_stale
-from rate_limit import RateLimited, check_and_count
+from rate_limit import RateLimited, check_and_count, refund
 from emails import (
     send_verification_email as _send_verification_email,
     send_confirmation_email as _send_confirmation_email,
@@ -104,7 +104,14 @@ def _send_verification_email_impl(req: https_fn.CallableRequest):
     app_url = os.environ.get("APP_URL", "http://localhost:5173")
     verify_url = f"{app_url}/verify?token={session_ref.id}"
 
-    _send_verification_email(email, verify_url, first_name)
+    try:
+        _send_verification_email(email, verify_url, first_name)
+    except Exception:
+        # No link went out, so this attempt shouldn't count against the limits,
+        # and the session can never be used. The outer handler logs the error.
+        refund(db, email, now)
+        session_ref.delete()
+        raise
 
     return {"success": True}
 
