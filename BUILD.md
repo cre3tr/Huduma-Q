@@ -24,7 +24,7 @@ issues and how they were resolved, newest first.
   limit, so three failures lock that address out for an hour.~~ Fixed in
   `3d479c2`: `refund()` gives the counters back and deletes the unusable
   session. It was emulator-tested. The deploy was blocked for agents by the
-  auto-mode classifier and handed to Ian:
+  auto-mode classifier, so Ian deployed it himself on 2026-11-04 with:
   `firebase deploy --only functions:send_verification_email --project hudumaq-2c732`.
 
 ### Hardening pass and demo labelling, 2026-11-04
