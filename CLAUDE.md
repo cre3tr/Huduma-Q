@@ -100,9 +100,8 @@ Feedback form is an external Google Form linked in resolved/missed emails. Zero 
 
 ## Known Gaps (acceptable for demo)
 
-- `appointments` Firestore rule allows read by any authenticated Google user, not just verified staff. `verify_arrival` Cloud Function enforces staff check server-side — safe for demo.
-- The 2-hour gap rule between a citizen's own bookings is enforced client-side only (`SlotGrid.jsx`). Savvy users can bypass by calling `hold_slot` directly.
-- Staff dashboard pages (`StaffPending`, `StaffResolved`) only check Firebase Auth presence, not the `staff/` doc, on mount. Backend enforces this for all write actions.
+- *(Resolved 2026-11-04, see BUILD.md.)* `appointments` reads now require a `staff/{uid}` doc; the 2-hour gap rule runs in `hold_slot`/`confirm_booking`; the staff pages check `staff/{uid}` on mount. The citizen browser can no longer read `appointments`, so nothing client-side may query it.
+- **Demo mode (2026-11-04):** the site is labelled a demo, ID number and phone are fixed sample values enforced in `send_verification_email`, and `functions/rate_limit.py` / `functions/cleanup.py` cap link requests and purge stale data. `frontend/vercel.json` carries the CSP; a new origin the app needs must be added there.
 - `confirm_booking` sends the confirmation email **after** the booking transaction commits. Since 2026-10-03 an email failure no longer fails the call: it logs the traceback and returns `emailSent: false`, and `Success.jsx` tells the citizen the email is delayed and points at the PDF receipt. Before that, a Brevo outage showed "Booking confirmation failed" for a booking that had succeeded, and a retry hit "Session already used".
 - **The Firestore emulator does not enforce composite indexes.** Measured 2026-10-03: StaffPending's query (`date ==`, `status ==`, `orderBy time`) needs composite index #2 in production but succeeds in the emulator. So an emulator run can never show that an index is removable. That is why composite index #1 `appointments(date, status)` was kept.
 

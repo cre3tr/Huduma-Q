@@ -6,6 +6,27 @@ issues and how they were resolved, newest first.
 
 ## Issues hit, and how they were resolved
 
+### Hardening pass and demo labelling, 2026-11-04
+
+Decision (Ian): the site stops taking real personal data and says it is not a
+government service. Commits `6c967e7` (banner, sample ID/phone, email footers),
+`4ca01c7` (appointments readable by staff only, `tests/firestore-rules.test.mjs`),
+`009883f` (log field names, not payloads), `dbe39e4` (`functions/rate_limit.py`:
+3 links/address/hour, 200/day), `4d5654d` (`functions/cleanup.py`: scheduled
+purge), `845dfea` (backlog note), `918ad49` (2-hour gap server-side, staff
+check on mount), `32ea61e` (headers and CSP in `frontend/vercel.json`),
+`39bc84f` (minimatch override).
+**Gotchas:**
+- Closing `appointments` reads broke the citizen-side lookup behind the old
+  client 2-hour check (it failed soft to an empty list), so that lookup and
+  `lib/appointments.js` were removed along with the server-side rule.
+- A CSP probe against a build with no `VITE_FIREBASE_*` renders an empty page
+  (Firebase throws at init) and shows zero violations: hollow. Build with dummy
+  values (see Cheatsheet) before probing.
+- The rules test and `cleanup`/`rate_limit` checks run with
+  `firebase emulators:exec --project demo-huduma --only firestore "<cmd>"`.
+- Not deployed. The first scheduled purge after deploy removes the backlog.
+
 ### `confirm_booking` reported a committed booking as failed when the email failed, 2026-10-03
 
 **Found:** the DEP-9 emulator test (2026-10-02). With a dummy Brevo key, the
