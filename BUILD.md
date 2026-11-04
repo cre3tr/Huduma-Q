@@ -25,7 +25,23 @@ check on mount), `32ea61e` (headers and CSP in `frontend/vercel.json`),
   values (see Cheatsheet) before probing.
 - The rules test and `cleanup`/`rate_limit` checks run with
   `firebase emulators:exec --project demo-huduma --only firestore "<cmd>"`.
-- Not deployed. The first scheduled purge after deploy removes the backlog.
+- ~~Not deployed.~~ **Deployed 2026-11-04.** The rules and all 5 functions went
+  out with `firebase deploy --only firestore:rules,functions`, and the frontend
+  through `main` (`33999d4`, then the lint commit `73301cb`). Ian approved the
+  first-run purge of the backlog. Production probes:
+  - a non-sample ID returned `INVALID_ARGUMENT "Demo only: use the sample ID number."`;
+  - anonymous lists of `sessions`, `appointments` and `rate_limits` returned 403, and `slots` returned 200;
+  - headless Chrome found 0 CSP violations on `/` and `/staff`, with the
+    banner rendered, while an injected inline script and style were blocked.
+
+  Not exercised: staff Google sign-in and a full booking with a real email.
+- **The Firebase CLI needs `functions/venv`** to discover the Python
+  functions. Recreate it with `py -3.14 -m venv functions/venv` and then
+  `functions/venv/Scripts/python.exe -m pip install -r functions/requirements.txt`.
+  It is gitignored and listed in `firebase.json` `functions.ignore`, so it stays
+  out of the upload (7.78 KB packaged).
+- **Lint is clean:** 38 problems became 0. `react/prop-types` is off, because
+  React 19 ignores propTypes. `useBooking` lives in `context/bookingState.js`.
 
 ### `confirm_booking` reported a committed booking as failed when the email failed, 2026-10-03
 
