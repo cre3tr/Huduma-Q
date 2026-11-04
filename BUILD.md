@@ -6,6 +6,23 @@ issues and how they were resolved, newest first.
 
 ## Issues hit, and how they were resolved
 
+### Sign-in returned 500: the Brevo API key had been deactivated, 2026-11-04
+
+- **Symptom:** after the hardening deploy, `send_verification_email` returned
+  500, and Landing showed "Could not send verification email".
+- **Diagnosis:**
+  - Agents can't read production logs (the auto-mode classifier blocks it), so
+    the call was replayed in the emulator with a dummy Brevo key.
+  - The sample-ID check, both rate-limit counters and the session write all
+    succeeded. Only the Brevo send failed (`RuntimeError: Brevo send failed:
+    (401)`). That cleared the new code up to the send.
+- **Cause:** Ian found the Brevo API key deactivated in the Brevo dashboard and
+  reactivated it.
+- **Rule:** when sign-in fails with 500, check Brevo's API key status and its
+  Authorised IPs before suspecting the code. Neither is visible from the repo.
+- **Known wart:** a failed send still counts against the 3-per-hour address
+  limit, so three failures lock that address out for an hour.
+
 ### Hardening pass and demo labelling, 2026-11-04
 
 Decision (Ian): the site stops taking real personal data and says it is not a
