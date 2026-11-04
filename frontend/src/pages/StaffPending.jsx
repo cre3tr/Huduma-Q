@@ -1,21 +1,30 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore'
 import { httpsCallable } from 'firebase/functions'
 import { db, functions, auth } from '../lib/firebase'
-import { signOutStaff } from '../lib/auth'
+import { signOutStaff, checkStaffAccess } from '../lib/auth'
 import AppointmentRow from '../components/AppointmentRow'
 
 export default function StaffPending() {
   const navigate = useNavigate()
+  const denied = useRef(false)
   const [appointments, setAppointments] = useState([])
   const [loadingIds, setLoadingIds] = useState(new Set())
   const [rowErrors, setRowErrors] = useState({})
   const [streamError, setStreamError] = useState(false)
 
   useEffect(() => {
-    const unsubscribeAuth = auth.onAuthStateChanged(u => {
-      if (!u) navigate('/staff')
+    const unsubscribeAuth = auth.onAuthStateChanged(async u => {
+      if (!u) {
+        if (!denied.current) navigate('/staff')
+        return
+      }
+      if (!(await checkStaffAccess(u.uid).catch(() => false))) {
+        denied.current = true
+        await signOutStaff()
+        navigate('/staff', { state: { message: 'Your account is not authorised for the staff portal.' } })
+      }
     })
 
     const today = new Date().toISOString().split('T')[0]

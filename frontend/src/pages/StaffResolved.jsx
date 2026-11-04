@@ -1,12 +1,13 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { collection, query, where, getDocs } from 'firebase/firestore'
 import { db, auth } from '../lib/firebase'
-import { signOutStaff } from '../lib/auth'
+import { signOutStaff, checkStaffAccess } from '../lib/auth'
 import AppointmentRow from '../components/AppointmentRow'
 
 export default function StaffResolved() {
   const navigate = useNavigate()
+  const denied = useRef(false)
   const [appointments, setAppointments] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -31,9 +32,18 @@ export default function StaffResolved() {
   }
 
   useEffect(() => {
-    const unsub = auth.onAuthStateChanged(u => {
-      if (!u) navigate('/staff')
-      else fetchResolved()
+    const unsub = auth.onAuthStateChanged(async u => {
+      if (!u) {
+        if (!denied.current) navigate('/staff')
+        return
+      }
+      if (await checkStaffAccess(u.uid).catch(() => false)) {
+        fetchResolved()
+      } else {
+        denied.current = true
+        await signOutStaff()
+        navigate('/staff', { state: { message: 'Your account is not authorised for the staff portal.' } })
+      }
     })
     return () => unsub()
   }, [navigate])

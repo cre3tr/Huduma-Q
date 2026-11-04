@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router'
+import { useNavigate, useLocation } from 'react-router'
 import { signInWithGoogle, checkStaffAccess, signOutStaff } from '../lib/auth'
 
 export default function StaffLogin() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [error, setError] = useState(location.state?.message || '')
 
   const handleLogin = async () => {
     setLoading(true)

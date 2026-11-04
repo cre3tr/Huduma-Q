@@ -42,6 +42,21 @@ SERVICE_LABELS = {
     "collect_id": "Collect ID",
 }
 
+MIN_GAP = timedelta(hours=2)
+
+def _has_booking_within_gap(email: str, slot: dict) -> bool:
+    """Same rule as the old SlotGrid check: another pending/resolved booking for
+    this email, on the same date, less than 2 hours from the slot."""
+    slot_dt = datetime.fromisoformat(f"{slot['date']}T{slot['time']}")
+    for doc in db.collection("appointments").where("email", "==", email).stream():
+        appt = doc.to_dict()
+        if appt.get("status") not in ("pending", "resolved") or appt.get("date") != slot["date"]:
+            continue
+        appt_dt = datetime.fromisoformat(f"{appt['date']}T{appt['time']}")
+        if abs(slot_dt - appt_dt) < MIN_GAP:
+            return True
+    return False
+
 @https_fn.on_call(region="us-central1")
 def send_verification_email(req: https_fn.CallableRequest):
     logging.info(f"Boundary Inbound fields: {sorted((req.data or {}).keys())}")
@@ -137,6 +152,9 @@ def hold_slot(req: https_fn.CallableRequest):
         if slot["status"] == "booked":
             raise https_fn.HttpsError("unavailable", "Slot already booked.")
 
+        if _has_booking_within_gap(session["email"], slot):
+            raise https_fn.HttpsError("failed-precondition", "You already have a booking within 2 hours of this time.")
+
         if slot["status"] == "held":
             held_until_existing = slot.get("heldUntil")
             if held_until_existing and held_until_existing > now:
@@ -189,6 +207,8 @@ def confirm_booking(req: https_fn.CallableRequest):
 
         slot = slot_snap.to_dict()
 
+        if _has_booking_within_gap(session["email"], slot):
+            raise https_fn.HttpsError("failed-precondition", "You already have a booking within 2 hours of this time.")
         if slot.get("heldBy") != session_token:
             raise https_fn.HttpsError("failed-precondition", "Slot not held by this session.")
         if slot.get("heldUntil") <= now:

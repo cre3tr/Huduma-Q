@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router'
 import { httpsCallable } from 'firebase/functions'
 import { functions } from '../lib/firebase'
 import { useBooking } from '../context/BookingContext'
-import { getCitizenAppointments } from '../lib/appointments'
 import ServiceCard from '../components/ServiceCard'
 import SlotGrid from '../components/SlotGrid'
 
@@ -22,13 +21,11 @@ export default function ServiceSelect() {
   const tomorrowStr = tmrw.toISOString().split('T')[0]
 
   const [date, setDate] = useState(todayStr)
-  const [existingAppointments, setExistingAppointments] = useState([])
   const [holding, setHolding] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
     if (!citizen) { navigate('/'); return }
-    getCitizenAppointments(citizen.email).then(setExistingAppointments)
   }, [citizen, navigate])
 
   const handleSlotSelect = async (slot) => {
@@ -43,6 +40,8 @@ export default function ServiceSelect() {
       console.error(err)
       if (err?.message === 'Slot time has already passed.') {
         setError('Slot hold unavailable — you cannot book a past time slot.')
+      } else if (err?.message === 'You already have a booking within 2 hours of this time.') {
+        setError(err.message)
       } else {
         setError('Slot hold unavailable — please try again shortly.')
       }
@@ -119,7 +118,6 @@ export default function ServiceSelect() {
             <SlotGrid
               date={date}
               service={selectedServiceData.id}
-              existingAppointments={existingAppointments}
               onSlotSelect={handleSlotSelect}
             />
 
