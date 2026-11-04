@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router'
 import { httpsCallable } from 'firebase/functions'
 import { functions } from '../lib/firebase'
-import { useBooking } from '../context/BookingContext'
+import { useBooking } from '../context/bookingState'
 import CountdownTimer from '../components/CountdownTimer'
 
 const serviceLabels = {

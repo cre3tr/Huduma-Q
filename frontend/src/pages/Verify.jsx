@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '../lib/firebase'
-import { useBooking } from '../context/BookingContext'
+import { useBooking } from '../context/bookingState'
 
 export default function Verify() {
   const [searchParams] = useSearchParams()

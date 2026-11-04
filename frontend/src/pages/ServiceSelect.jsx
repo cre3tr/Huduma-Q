@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router'
 import { httpsCallable } from 'firebase/functions'
 import { functions } from '../lib/firebase'
-import { useBooking } from '../context/BookingContext'
+import { useBooking } from '../context/bookingState'
 import ServiceCard from '../components/ServiceCard'
 import SlotGrid from '../components/SlotGrid'
 

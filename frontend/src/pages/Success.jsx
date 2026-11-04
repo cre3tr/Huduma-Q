@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
-import { useBooking } from '../context/BookingContext'
+import { useBooking } from '../context/bookingState'
 import { generatePDF } from '../lib/pdf'
 import { generateICS } from '../lib/ics'
 

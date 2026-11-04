@@ -23,7 +23,7 @@ export default function CheckEmail() {
           </p>
         </div>
 
-        <p className="text-xs text-gray-400 mt-6">Didn't receive it? Check your spam folder.</p>
+        <p className="text-xs text-gray-400 mt-6">Didn&apos;t receive it? Check your spam folder.</p>
       </div>
     </div>
   )
