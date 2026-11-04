@@ -16,8 +16,17 @@ issues and how they were resolved, newest first.
   - The sample-ID check, both rate-limit counters and the session write all
     succeeded. Only the Brevo send failed (`RuntimeError: Brevo send failed:
     (401)`). That cleared the new code up to the send.
-- **Cause:** Ian found the Brevo API key deactivated in the Brevo dashboard and
-  reactivated it.
+- **Cause, in two layers,** read from the Cloud Run stderr logs with `gcloud
+  logging read` (logName `run.googleapis.com/stderr`; `firebase functions:log`
+  shows only the deploy audit entries for Gen 2):
+  1. Until 12:07 UTC, Brevo answered `401 {"message":"API Key is not enabled"}`.
+     Ian reactivated the key.
+  2. From 12:41 UTC it answered `401 "We have detected you are using an
+     unrecognised IP address 2600:1900:…"`. Brevo's **Authorised IPs** list
+     blocks the function, and Cloud Functions have no fixed outbound IP, so
+     adding the one address would not last.
+- The Brevo 401 body does not echo the recipient address. That answers the
+  open question about tracebacks carrying PII, for this error at least.
 - **Rule:** when sign-in fails with 500, check Brevo's API key status and its
   Authorised IPs before suspecting the code. Neither is visible from the repo.
 - ~~**Known wart:** a failed send still counts against the 3-per-hour address
