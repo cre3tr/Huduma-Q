@@ -8,6 +8,7 @@ from firebase_admin import firestore
 from firebase_functions import https_fn, scheduler_fn, options
 
 from codes import generate_code
+from rate_limit import RateLimited, check_and_count
 from emails import (
     send_verification_email as _send_verification_email,
     send_confirmation_email as _send_confirmation_email,
@@ -67,6 +68,10 @@ def _send_verification_email_impl(req: https_fn.CallableRequest):
         raise https_fn.HttpsError("invalid-argument", "Invalid email address.")
 
     now = datetime.now(timezone.utc)
+    try:
+        check_and_count(db, email, now)
+    except RateLimited as e:
+        raise https_fn.HttpsError("resource-exhausted", e.message)
     expires_at = now + timedelta(minutes=15)
 
     session_ref = db.collection("sessions").document()

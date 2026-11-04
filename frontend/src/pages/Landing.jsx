@@ -33,7 +33,11 @@ export default function Landing() {
       navigate('/check-email', { state: { email: formData.email } })
     } catch (err) {
       console.error(err)
-      setError('Could not send verification email. Please try again.')
+      if (err?.code === 'functions/resource-exhausted' && err.message) {
+        setError(err.message)
+      } else {
+        setError('Could not send verification email. Please try again.')
+      }
     } finally {
       setLoading(false)
     }

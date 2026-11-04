@@ -18,6 +18,12 @@
   alone; the 2026-10-03 functions deploy implies the secrets exist
   (BUILD.md).
 
+- [ ] **App Check (reCAPTCHA) for the callable functions.** Needs a reCAPTCHA
+  key registered in the Firebase console, then `enforceAppCheck` on the
+  functions and the client initialisation. Ian to register the key. Until then
+  the per-address and daily limits in `functions/rate_limit.py` are the only
+  abuse control on `send_verification_email`.
+
 ## Dependencies
 
 - [ ] **PR #15: firebase 12.19.0 to 13.1.0** (major), open since 2026-11-01.
