@@ -1,3 +1,7 @@
 functions/.env
 __pycache__/
 .claude/settings.local.json
+
+# Local Python env for the Firebase CLI (recreated from functions/requirements.txt)
+functions/venv/
+firestore-debug.log
