@@ -68,7 +68,9 @@ check on mount), `32ea61e` (headers and CSP in `frontend/vercel.json`),
   2026-11-04 that it works under the new CSP: the Google popup, the
   `staff/{uid}` check on mount, and StaffPending's staff-only `appointments`
   query, which rendered "No pending appointments for today" with no permission
-  error. Still not exercised: a full booking with a real email.
+  error. The sign-in email reached Ian's inbox the same day, once the Brevo key
+  was reactivated and Authorised IPs switched off. Not yet exercised: the rest
+  of a booking (slot hold, confirm, confirmation email).
 - **The Firebase CLI needs `functions/venv`** to discover the Python
   functions. Recreate it with `py -3.14 -m venv functions/venv` and then
   `functions/venv/Scripts/python.exe -m pip install -r functions/requirements.txt`.
