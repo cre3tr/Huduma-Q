@@ -8,6 +8,7 @@ from firebase_admin import firestore
 from firebase_functions import https_fn, scheduler_fn, options
 
 from codes import generate_code
+from cleanup import purge_stale
 from rate_limit import RateLimited, check_and_count
 from emails import (
     send_verification_email as _send_verification_email,
@@ -328,4 +329,10 @@ def sweep_missed(event: scheduler_fn.ScheduledEvent):
             logging.info(f"Marked missed: {doc.id}")
 
     logging.info(f"sweep_missed complete. Marked {missed_count} appointments missed.")
+
+    # Retention: delete stale sessions, old appointments and rate-limit counters.
+    try:
+        purge_stale(db, datetime.now(timezone.utc), today_str)
+    except Exception:
+        logging.error(f"purge_stale failed:\n{traceback.format_exc()}")
 
