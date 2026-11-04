@@ -24,6 +24,13 @@
   the per-address and daily limits in `functions/rate_limit.py` are the only
   abuse control on `send_verification_email`.
 
+## Accepted for the demo
+
+- [x] **Identity is not verified beyond a working email inbox.** By design:
+  the ID number and phone are fixed sample values (2026-11-04) and the site
+  says it is a demo. Revisit only if the answer to VISION.md Q1 is "candidate
+  product".
+
 ## Dependencies
 
 - [ ] **PR #15: firebase 12.19.0 to 13.1.0** (major), open since 2026-11-01.
