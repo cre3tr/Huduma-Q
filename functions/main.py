@@ -42,7 +42,7 @@ SERVICE_LABELS = {
 
 @https_fn.on_call(region="us-central1")
 def send_verification_email(req: https_fn.CallableRequest):
-    logging.info(f"Boundary Inbound Payload: {req.data}")
+    logging.info(f"Boundary Inbound fields: {sorted((req.data or {}).keys())}")
     try:
         return _send_verification_email_impl(req)
     except https_fn.HttpsError:
@@ -89,7 +89,7 @@ def _send_verification_email_impl(req: https_fn.CallableRequest):
 
 @https_fn.on_call(region="us-central1")
 def hold_slot(req: https_fn.CallableRequest):
-    logging.info(f"Boundary Inbound Payload: {req.data}")
+    logging.info(f"Boundary Inbound fields: {sorted((req.data or {}).keys())}")
 
     slot_id = req.data.get("slotId")
     session_token = req.data.get("sessionToken")
@@ -149,7 +149,7 @@ def hold_slot(req: https_fn.CallableRequest):
 
 @https_fn.on_call(region="us-central1")
 def confirm_booking(req: https_fn.CallableRequest):
-    logging.info(f"Boundary Inbound Payload: {req.data}")
+    logging.info(f"Boundary Inbound fields: {sorted((req.data or {}).keys())}")
 
     slot_id = req.data.get("slotId")
     session_token = req.data.get("sessionToken")
@@ -238,7 +238,7 @@ def confirm_booking(req: https_fn.CallableRequest):
 
 @https_fn.on_call(region="us-central1")
 def verify_arrival(req: https_fn.CallableRequest):
-    logging.info(f"Boundary Inbound Payload: {req.data}")
+    logging.info(f"Boundary Inbound fields: {sorted((req.data or {}).keys())}")
 
     # Require Firebase Auth
     if not req.auth:
