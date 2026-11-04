@@ -19,9 +19,9 @@ export function generateICS(appointment) {
     'BEGIN:VEVENT',
     `DTSTART:${dtStart}`,
     `DTEND:${dtEnd}`,
-    `SUMMARY:Huduma Centre - ${appointment.service}`,
+    `SUMMARY:DEMO - Huduma Centre - ${appointment.service}`,
     `LOCATION:${appointment.centreLocation}`,
-    `DESCRIPTION:Appointment for ${appointment.firstName} ${appointment.lastName} (ID: ${appointment.idNumber})`,
+    `DESCRIPTION:Appointment for ${appointment.firstName} ${appointment.lastName} (ID: ${appointment.idNumber}). Demo, not a real appointment.`,
     'END:VEVENT',
     'END:VCALENDAR'
   ].join('\r\n')

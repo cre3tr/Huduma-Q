@@ -52,7 +52,7 @@ export default function Success() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Booking confirmed</h1>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Demo booking confirmed</h1>
           <p className="text-sm text-gray-500 mt-1.5">
             {confirmedAppointment.emailSent
               ? 'Check your email for a confirmation receipt.'
@@ -85,6 +85,10 @@ export default function Success() {
               Add to Calendar
             </button>
           </div>
+
+          <p className="text-center text-xs text-amber-800 font-medium">
+            Demo, not a real appointment.
+          </p>
 
           <p className="text-center text-xs text-gray-400">
             This page closes in {secondsLeft}s

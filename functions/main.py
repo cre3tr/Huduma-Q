@@ -31,6 +31,9 @@ class _LazyDB:
 
 db = _LazyDB()
 
+DEMO_ID_NUMBER = "00000000"
+DEMO_PHONE = "+254700000000"
+
 SERVICE_LABELS = {
     "new_id": "New ID Application",
     "replace_id": "Replace Lost ID",
@@ -55,10 +58,11 @@ def _send_verification_email_impl(req: https_fn.CallableRequest):
     last_name = data.get("lastName", "").strip()
     email = data.get("email", "").strip().lower()
     id_number = data.get("idNumber", "").strip()
-    phone = data.get("phone", "").strip()
+    # Demo: the phone is stored as the fixed sample whatever the client sends.
+    phone = DEMO_PHONE
 
-    if not re.match(r"^\d{8}$", id_number):
-        raise https_fn.HttpsError("invalid-argument", "ID number must be exactly 8 digits.")
+    if id_number != DEMO_ID_NUMBER:
+        raise https_fn.HttpsError("invalid-argument", "Demo only: use the sample ID number.")
     if not re.match(r"^[^@]+@[^@]+\.[^@]+$", email):
         raise https_fn.HttpsError("invalid-argument", "Invalid email address.")
 

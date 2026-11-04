@@ -3,13 +3,16 @@ import { useNavigate } from 'react-router'
 import { httpsCallable } from 'firebase/functions'
 import { functions } from '../lib/firebase'
 
+const SAMPLE_ID = '00000000'
+const SAMPLE_PHONE = '+254 700 000 000'
+
 const inputCls = 'w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400 transition'
 const labelCls = 'block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5'
 
 export default function Landing() {
   const navigate = useNavigate()
   const [formData, setFormData] = useState({
-    firstName: '', lastName: '', email: '', idNumber: '', phone: ''
+    firstName: '', lastName: '', email: '', idNumber: SAMPLE_ID, phone: SAMPLE_PHONE
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -49,6 +52,9 @@ export default function Landing() {
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+          <p className="text-sm text-amber-900 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-5">
+            Please don&apos;t enter real personal details. Use any name, and an email inbox you can check: the demo emails you a sign-in link there. The ID number and phone fields are fixed sample values.
+          </p>
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -65,12 +71,12 @@ export default function Landing() {
               <input type="email" name="email" required value={formData.email} onChange={handleChange} className={inputCls} placeholder="you@email.com" />
             </div>
             <div>
-              <label className={labelCls}>National ID Number</label>
-              <input type="text" name="idNumber" required value={formData.idNumber} onChange={handleChange} className={inputCls} placeholder="8 digits" maxLength={8} />
+              <label className={labelCls}>National ID Number (sample)</label>
+              <input type="text" name="idNumber" required readOnly value={formData.idNumber} className={inputCls + ' bg-gray-50 text-gray-500'} maxLength={8} />
             </div>
             <div>
-              <label className={labelCls}>Phone Number</label>
-              <input type="tel" name="phone" required value={formData.phone} onChange={handleChange} className={inputCls} placeholder="+254 7XX XXX XXX" />
+              <label className={labelCls}>Phone Number (sample)</label>
+              <input type="tel" name="phone" required readOnly value={formData.phone} className={inputCls + ' bg-gray-50 text-gray-500'} />
             </div>
 
             {error && (

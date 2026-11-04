@@ -10,7 +10,7 @@ export function generatePDF(appointment) {
   const doc = new jsPDF()
   
   doc.setFontSize(22)
-  doc.text('HudumaQ Appointment', 20, 30)
+  doc.text('HudumaQ Appointment (Demo)', 20, 30)
   
   doc.setFontSize(12)
   doc.text(`Name: ${appointment.firstName} ${appointment.lastName}`, 20, 50)
@@ -20,5 +20,9 @@ export function generatePDF(appointment) {
   doc.text(`Time: ${appointment.time}`, 20, 90)
   doc.text(`Location: ${appointment.centreLocation}`, 20, 100)
   
+  doc.setFontSize(11)
+  doc.text('Demo, not a real appointment.', 20, 120)
+  doc.text('HudumaQ is a hackathon demo, not a government service.', 20, 128)
+
   doc.save('hudumaq-appointment.pdf')
 }

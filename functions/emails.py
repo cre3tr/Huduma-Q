@@ -21,7 +21,11 @@ SERVICE_LABELS = {
     "collect_id": "Collect ID",
 }
 
+DEMO_FOOTER = "This email comes from a hackathon demo, not a government service."
+
+
 def _send(to_email: str, subject: str, text: str):
+    text = f"{text}\n\n{DEMO_FOOTER}"
     try:
         _get_api().send_transac_email(sib_api_v3_sdk.SendSmtpEmail(
             sender=_get_sender(),
